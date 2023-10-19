@@ -1,14 +1,15 @@
 package com.cedarsoftware.util.io
 
 import groovy.transform.CompileStatic
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertNotSame
-import static org.junit.Assert.assertNull
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNotSame
+import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertTrue
 
+import static com.cedarsoftware.util.io.JsonObject.REF
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
  *         <br>
@@ -108,7 +109,7 @@ class TestBigDecimal
         bigDecs.fromDouble = new BigDecimal("0.0")
         bigDecs.fromBoolean = bigDecs.fromDouble;
         String json = TestUtil.getJsonString(bigDecs)
-        assertFalse(json.contains("@ref"))
+        assertFalse(json.contains(REF))
     }
 
     @Test

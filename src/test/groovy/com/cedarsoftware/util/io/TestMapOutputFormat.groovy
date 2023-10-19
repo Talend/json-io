@@ -1,9 +1,12 @@
 package com.cedarsoftware.util.io
 
+import com.cedarsoftware.util.DeepEquals
 import groovy.transform.CompileStatic
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 /**
+ * Test cases for JsonReader / JsonWriter
+ *
  * @author John DeRegnaucourt (jdereg@gmail.com)
  *         <br>
  *         Copyright (c) Cedar Software LLC
@@ -21,25 +24,20 @@ import org.junit.Test
  *         limitations under the License.
  */
 @CompileStatic
-class TestNullIntegerConstructor
+class TestMapOutputFormat
 {
-    class NullInteger
-    {
-        Integer i
-
-        NullInteger(Integer i)
-        {
-            this.i = i
-        }
-    }
-
     @Test
-    void testNullIntegerConstructorValue()
+    void testMapFormat()
     {
-        NullInteger i = new NullInteger(null)
-
-        String json = JsonWriter.objectToJson(i, [(JsonWriter.SKIP_NULL_FIELDS): true] as Map)
-        NullInteger i2 = (NullInteger) JsonReader.jsonToJava(json)
-        assert i2.i == 0
+        Map map = ['a': 'foo', 'b': 'bar', 'c':'baz', 'd': 'qux']
+        String json1 = JsonWriter.objectToJson(map, [(JsonWriter.FORCE_MAP_FORMAT_ARRAY_KEYS_ITEMS): true] as Map)
+        String json2 = JsonWriter.objectToJson(map, [(JsonWriter.FORCE_MAP_FORMAT_ARRAY_KEYS_ITEMS): false] as Map)
+        assert json1 != json2
+        assert json1.contains('@keys')
+        assert json1.contains('@items')
+        assert !json2.contains('@keys')
+        assert !json2.contains('@items')
+        Map newMap = (Map) JsonReader.jsonToJava(json2)
+        assert DeepEquals.deepEquals(map, newMap)
     }
 }

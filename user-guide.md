@@ -56,7 +56,7 @@ can be read, modified, and then re-written by a JVM that does not contain any of
 
 #### The optional values below are public constants from `JsonWriter`, used by placing them as keys in the arguments map.
 
-    CUSTOM_WRITER_MAP       // Set to Map<Class, JsonWriter.JsonClassWriterEx> to
+    CUSTOM_WRITER_MAP       // Set to Map<Class, JsonWriter.JsonClassWriter> to
                             // override the default JSON output for a given class. 
     NOT_CUSTOM_WRITER_MAP   // Set to Collection<Class> to indicate classes that should
                             // not be written by a custom writer.
@@ -67,7 +67,7 @@ can be read, modified, and then re-written by a JVM that does not contain any of
                             // JsonWriter.ISO_DATE_TIME_FORMAT 
     TYPE                    // Set to boolean true to force all data types to be 
                             // output, even where they could have been omitted. Set
-                            // to false to prevent @type to be written. Do not set
+                            // to false to prevent @type from being written. Do not set
                             // in order to minimize the number of @type's emitted.
     PRETTY_PRINT            // Force nicely formatted JSON output 
                             // (See http://jsoneditoronline.org for example format)
@@ -75,7 +75,7 @@ can be read, modified, and then re-written by a JVM that does not contain any of
                             // control which fields of a class are output.
     FIELD_NAME_BLACK_LIST   // Set value to a Map<Class, List<String>> which will be used
                             // to control which fields on a class are not output. Black 
-                            // list has always priority to FIELD_SPECIFIERS                         
+                            // list always has priority to FIELD_SPECIFIERS                         
     ENUM_PUBLIC_ONLY        // If set, indicates that private variables of ENUMs are not 
                             // serialized.
     WRITE_LONGS_AS_STRINGS  // If set, longs are written in quotes (Javascript safe).
@@ -92,6 +92,8 @@ can be read, modified, and then re-written by a JVM that does not contain any of
                             // to choose.                             
     CLASSLOADER             // ClassLoader instance to use when turning String names of     
                             // classes into JVM Class instances.
+    FORCE_MAP_FORMAT_ARRAY_KEYS_ITEMS  // Force Map output to use @keys/@items even if 
+                            // the Map contains all Strings as keys.
 
 #### The optional values below are public constants from `JsonReader`, used by placing them as keys in the arguments map.
 
@@ -174,7 +176,7 @@ classes for which you do not have the source code.
     Example (in Groovy). Note the Person has a List of pets, and in this case, it re-uses 
     JsonWriter to write that part of the class out (no need to customize it):
     
-    static class CustomPersonWriter implements JsonWriter.JsonClassWriterEx
+    static class CustomPersonWriter implements JsonWriter.JsonClassWriter
     {
         void write(Object o, boolean showType, Writer output, Map<String, Object> args) throws IOException
         {

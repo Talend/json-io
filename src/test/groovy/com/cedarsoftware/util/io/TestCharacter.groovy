@@ -1,10 +1,10 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertSame
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertSame
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -100,5 +100,14 @@ class TestCharacter
         assertEquals(chars[0], 'a' as char)
         assertEquals(chars[1], '\t' as char)
         assertEquals(chars[2], '\u0004' as char)
+    }
+
+    @Test
+    void testQuoteAsCharacterValue()
+    {
+        String jsonString = """{ "@type": "char", "value": "\\"" }"""
+        JsonReader jsonReader = new JsonReader(new ByteArrayInputStream(jsonString.getBytes('UTF-8')))
+        Object object = jsonReader.readObject()
+        assert (Character) object == '"'
     }
 }

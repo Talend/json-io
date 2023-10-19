@@ -1,12 +1,13 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import groovy.transform.CompileStatic
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertNull
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.fail
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertThrows
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -25,6 +26,7 @@ import static org.junit.Assert.fail
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestFields
 {
     public static Date _testDate = new Date()
@@ -40,7 +42,7 @@ class TestFields
         int age
     }
 
-    class TestVanillaFields
+    static class TestVanillaFields
     {
         Object name
         Object salary
@@ -437,7 +439,7 @@ class TestFields
     {
         ManyFields tf = new ManyFields()
         tf.init()
-        def json0 = JsonWriter.objectToJson(tf, [(JsonWriter.TYPE):true])
+        def json0 = JsonWriter.objectToJson(tf, [(JsonWriter.TYPE):true] as Map)
         def json1 = JsonWriter.objectToJson(tf)
         assertTrue(json0.length() > json1.length())
     }
@@ -462,10 +464,11 @@ class TestFields
     @Test
     void testAssignToObjectField()
     {
-        String json = '{"@type":"' + TestVanillaFields.class.getName() + '","name":"Nakamoto","salary":100.45,"age":48,"alive":true,"garbage":null}'
+        Class clazz = TestVanillaFields.class
+        String json = '{"@type":"' + clazz.name + '","name":"Nakamoto","salary":100.45,"age":48,"alive":true,"garbage":null}'
         TestVanillaFields vanilla = (TestVanillaFields) TestUtil.readJsonObject(json)
         assertEquals(vanilla.name, "Nakamoto")
-        assertEquals(vanilla.salary, 100.45, 0.0001)
+        assertEquals(vanilla.salary as Double, 100.45d, 0.0001d)
         assertEquals(vanilla.age, 48L)
         assertEquals(vanilla.alive, true)
         assertEquals(vanilla.garbage, null)
@@ -484,15 +487,8 @@ class TestFields
 
         Map args = new HashMap()
         args.put(JsonWriter.FIELD_SPECIFIERS, fieldSpecifiers)
-        try
-        {
-            JsonWriter.objectToJson(painful, args)
-            fail("should not make it here")
-        }
-        catch (Exception e)
-        {
-            assertTrue(e.getMessage().toLowerCase().contains("unable to convert"))
-        }
+
+        assertThrows(Exception.class, {  JsonWriter.objectToJson(painful, args) })
     }
 
     @Test
@@ -517,12 +513,12 @@ class TestFields
     @Test
     void testExternalFieldSpecifierInheritance()
     {
-        Map<Class, List<String>> fieldSpecifiers = [(PainfulToSerialize.class):['name']]
+        Map<Class, List<String>> fieldSpecifiers = [(PainfulToSerialize.class): ['name']] as Map
         MorePainfulToSerialize painful = new MorePainfulToSerialize()
         painful.name = "Android rocks"
         painful.age = 50;
 
-        def args = [(JsonWriter.FIELD_SPECIFIERS):fieldSpecifiers]
+        def args = [(JsonWriter.FIELD_SPECIFIERS):fieldSpecifiers] as Map
         String json = JsonWriter.objectToJson(painful, args)
         Map check = (Map) JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS):true] as Map)
         assertTrue(check.size() == 1)
@@ -555,11 +551,11 @@ class TestFields
     @Test
     void testFieldBlackList()
     {
-        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']]
+        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']] as Map
         PainfulToSerialize painful = new PainfulToSerialize()
         painful.name = "Android rocks"
 
-        def args = [(JsonWriter.FIELD_NAME_BLACK_LIST):blackLists]
+        def args = [(JsonWriter.FIELD_NAME_BLACK_LIST):blackLists] as Map
         String json = JsonWriter.objectToJson(painful, args)
         Map check = (Map) JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS):true] as Map)
         assertTrue(check.size() == 1)
@@ -569,12 +565,12 @@ class TestFields
     @Test
     void testFieldBlackListInheritance()
     {
-        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']]
+        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']] as Map
         MorePainfulToSerialize painful = new MorePainfulToSerialize()
         painful.name = "Android rocks"
         painful.age = 50;
 
-        def args = [(JsonWriter.FIELD_NAME_BLACK_LIST):blackLists]
+        def args = [(JsonWriter.FIELD_NAME_BLACK_LIST):blackLists] as Map
         String json = JsonWriter.objectToJson(painful, args)
         Map check = (Map) JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS):true] as Map)
         assertTrue(check.size() == 2)
@@ -585,8 +581,8 @@ class TestFields
     @Test
     void testFieldBlackListPriorityToSpecifier()
     {
-        Map<Class, List<String>> fieldSpecifiers = [(PainfulToSerialize.class):['name','classLoader']]
-        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']]
+        Map<Class, List<String>> fieldSpecifiers = [(PainfulToSerialize.class):['name','classLoader']] as Map
+        Map<Class, List<String>> blackLists = [(PainfulToSerialize.class):['classLoader']] as Map
         
         PainfulToSerialize painful = new PainfulToSerialize()
         painful.name = "Android rocks"

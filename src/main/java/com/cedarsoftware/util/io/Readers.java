@@ -1,15 +1,25 @@
 package com.cedarsoftware.util.io;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,7 +63,7 @@ public class Readers
     private static final Pattern timePattern2 = Pattern.compile("(\\d{2})[.:](\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?");
     private static final Pattern timePattern3 = Pattern.compile("(\\d{2})[.:](\\d{2})([+-]\\d{2}[:]?\\d{2}|Z)?");
     private static final Pattern dayPattern = Pattern.compile(DAYS, Pattern.CASE_INSENSITIVE);
-    private static final Map<String, String> months = new LinkedHashMap<String, String>();
+    private static final Map<String, String> months = new LinkedHashMap<>();
 
     static
     {
@@ -84,10 +94,121 @@ public class Readers
         months.put("december", "12");
     }
 
+    public static class URLReader implements JsonReader.JsonClassReaderEx
+    {
+        public Object read(Object o, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
+        {
+            boolean isString = o instanceof String;
+
+            try
+            {
+                if (isString)
+                {
+                    URI uri = URI.create((String)o);
+                    return uri.toURL();
+                }
+
+                return createURLFromJsonObject((JsonObject)o);
+            }
+            catch(MalformedURLException e)
+            {
+                throw new JsonIoException("java.net.URL malformed URL:  " + ((o instanceof String) ? o : e.getMessage()));
+            }
+        }
+
+        URL createURLFromJsonObject(JsonObject jObj) throws MalformedURLException {
+            if (jObj.containsKey("value")) {
+                jObj.target = createUrlNewWay(jObj);
+            } else {
+                jObj.target = createUrlOldWay(jObj);
+            }
+            return (URL)jObj.target;
+        }
+
+        URL createUrlNewWay(JsonObject jObj) throws MalformedURLException
+        {
+            return URI.create((String)jObj.get("value")).toURL();
+        }
+
+        URL createUrlOldWay(JsonObject jObj) throws MalformedURLException {
+            String protocol = (String)jObj.get("protocol");
+            String host = (String)jObj.get("host");
+            String file = (String)jObj.get("file");
+            String authority = (String)jObj.get("authority");
+            String ref = (String)jObj.get("ref");
+            Long port = (Long)jObj.get("port");
+
+            StringBuilder builder = new StringBuilder(protocol + ":");
+            if (!protocol.equalsIgnoreCase("jar")) {
+                builder.append("//");
+            }
+            if (authority != null && !authority.isEmpty()) {
+                builder.append(authority);
+            } else {
+                if (host != null && !host.isEmpty()) {
+                    builder.append(host);
+                }
+                if (!port.equals(-1L)) {
+                    builder.append(":" + port);
+                }
+            }
+            if (file != null && !file.isEmpty()) {
+                builder.append(file);
+            }
+            if (ref != null && !ref.isEmpty()) {
+                builder.append("#" + ref);
+            }
+            return new URL(builder.toString());
+        }
+    }
+
+    public static class EnumReader implements JsonReader.JsonClassReaderEx
+    {
+        public Object read(Object o, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
+        {
+            boolean isString = o instanceof String;
+
+            try
+            {
+                if (isString)
+                {
+                    return (String)o;
+                }
+
+                return createEnumFromJsonObject((JsonObject)o, stack, args);
+            }
+            catch(Exception e)
+            {
+                throw new JsonIoException("Exception loading Enum:  " + ((o instanceof String) ? o : e.getMessage()));
+            }
+        }
+
+        Object createEnumFromJsonObject(JsonObject jObj, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
+        {
+            String type = jObj.type;
+            ClassLoader loader = (ClassLoader)args.get(JsonReader.CLASSLOADER);
+            Class c = classForName(type, loader);
+
+            Optional<Class> cls = MetaUtils.getClassIfEnum(c, loader);
+
+            jObj.target = Enum.valueOf(cls.orElse(c), (String)jObj.get("name"));
+
+            ObjectResolver resolver = (ObjectResolver) args.get(JsonReader.OBJECT_RESOLVER);
+            resolver.traverseFields(stack, (JsonObject<String, Object>) jObj, Set.of("name", "ordinal"));
+            Object target = ((JsonObject<String, Object>) jObj).getTarget();
+            return target;
+        }
+    }
+
     public static class TimeZoneReader implements JsonReader.JsonClassReaderEx
     {
         public Object read(Object o, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
         {
+            if (o instanceof String)
+            {
+                return TimeZone.getTimeZone((String)o);
+            }
+
             JsonObject jObj = (JsonObject)o;
             Object zone = jObj.get("zone");
             if (zone == null)
@@ -95,6 +216,7 @@ public class Readers
                 throw new JsonIoException("java.util.TimeZone must specify 'zone' field");
             }
             jObj.target = TimeZone.getTimeZone((String) zone);
+
             return jObj.target;
         }
     }
@@ -141,7 +263,7 @@ public class Readers
                     throw new JsonIoException("Calendar missing 'time' field");
                 }
                 Date date = MetaUtils.dateFormat.get().parse(time);
-                Class c;
+                Class<?> c;
                 if (jObj.getTarget() != null)
                 {
                     c = jObj.getTarget().getClass();
@@ -814,24 +936,102 @@ public class Readers
             Object nanos = jObj.get("nanos");
             if (nanos == null)
             {
-                jObj.target = new Timestamp(Long.valueOf((String) time));
+                jObj.target = new Timestamp(Long.parseLong((String) time));
                 return jObj.target;
             }
 
-            Timestamp tstamp = new Timestamp(Long.valueOf((String) time));
-            tstamp.setNanos(Integer.valueOf((String) nanos));
+            Timestamp tstamp = new Timestamp(Long.parseLong((String) time));
+            tstamp.setNanos(Integer.parseInt((String) nanos));
             jObj.target = tstamp;
             return jObj.target;
         }
     }
 
+    public static class UUIDReader implements JsonReader.JsonClassReaderEx
+    {
+        public Object read(Object o, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
+        {
+
+            // to use the String representation
+            if (o instanceof String)
+            {
+                return UUID.fromString((String) o);
+            }
+
+            JsonObject jObj = (JsonObject) o;
+            Long mostSigBits = (Long) jObj.get("mostSigBits");
+            if (mostSigBits == null)
+            {
+                throw new JsonIoException("java.util.UUID must specify 'mostSigBits' field");
+            }
+            Long leastSigBits = (Long) jObj.get("leastSigBits");
+            if (leastSigBits == null)
+            {
+                throw new JsonIoException("java.util.UUID must specify 'leastSigBits' field");
+            }
+
+            UUID uuid = new UUID(mostSigBits, leastSigBits);
+
+            jObj.setTarget(uuid);
+            return jObj.getTarget();
+        }
+    }
+
+    public static class RecordReader implements JsonReader.JsonClassReaderEx
+    {
+        @Override
+        public Object read(Object o, Deque<JsonObject<String, Object>> stack, Map<String, Object> args)
+        {
+            try
+            {
+                JsonObject jsonObj = (JsonObject) o;
+
+                ArrayList<Class<?>> lParameterTypes = new ArrayList<>(jsonObj.size());
+                ArrayList<Object> lParameterValues = new ArrayList<>(jsonObj.size());
+
+                Class<?> c = Class.forName(jsonObj.getType());
+                // the record components are per definition in the constructor parameter order
+                // we implement this with reflection due to code compatibility Java<16
+                Method getRecordComponents = Class.class.getMethod("getRecordComponents");
+                Object[] recordComponents = (Object[]) getRecordComponents.invoke(c);
+                for (Object recordComponent : recordComponents)
+                {
+                    Class<?> type = (Class<?>) recordComponent.getClass().getMethod("getType").invoke(recordComponent);
+                    lParameterTypes.add(type);
+
+                    String parameterName = (String) recordComponent.getClass().getMethod("getName").invoke(recordComponent);
+                    JsonObject parameterValueJsonObj = new JsonObject();
+                    parameterValueJsonObj.setType(type.getName());
+                    parameterValueJsonObj.put("value", jsonObj.get(parameterName));
+
+                    if(parameterValueJsonObj.isLogicalPrimitive())
+                        lParameterValues.add(parameterValueJsonObj.getPrimitiveValue());
+                    else
+                        lParameterValues.add(parameterValueJsonObj.get("value"));
+                }
+
+                Constructor<?> constructor = c.getDeclaredConstructor(lParameterTypes.toArray(new Class[0]));
+                constructor.trySetAccessible();
+
+                return constructor.newInstance(lParameterValues.toArray(new Object[0]));
+
+            } catch (NoSuchMethodException e)
+            {
+                throw new RuntimeException("Record de-serialization only works with java>=16.", e);
+            } catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     // ========== Maintain dependency knowledge in once place, down here =========
-    static Class classForName(String name, ClassLoader classLoader)
+    static Class<?> classForName(String name, ClassLoader classLoader)
     {
         return MetaUtils.classForName(name, classLoader);
     }
 
-    static Object newInstance(Class c, JsonObject jsonObject)
+    static Object newInstance(Class<?> c, JsonObject jsonObject)
     {
         return JsonReader.newInstance(c, jsonObject);
     }

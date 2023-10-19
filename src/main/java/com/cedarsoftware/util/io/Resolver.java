@@ -4,19 +4,10 @@ import com.cedarsoftware.util.io.JsonReader.MissingFieldHandler;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
+
+import static com.cedarsoftware.util.io.JsonObject.ITEMS;
+import static com.cedarsoftware.util.io.JsonObject.KEYS;
 
 /**
  * This class is used to convert a source of Java Maps that were created from
@@ -43,19 +34,21 @@ import java.util.TreeSet;
  *         See the License for the specific language governing permissions and
  *         limitations under the License.*
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 abstract class Resolver
 {
-    final Collection<UnresolvedReference> unresolvedRefs = new ArrayList<UnresolvedReference>();
+    final Collection<UnresolvedReference>  unresolvedRefs = new ArrayList<>();
     protected final JsonReader reader;
     private static final NullClass nullReader = new NullClass();
-    final Map<Class, JsonReader.JsonClassReaderBase> readerCache = new HashMap<Class, JsonReader.JsonClassReaderBase>();
-    private final Collection<Object[]> prettyMaps = new ArrayList<Object[]>();
+    final Map<Class, JsonReader.JsonClassReaderBase> readerCache = new HashMap<>();
+    private final Collection<Object[]> prettyMaps = new ArrayList<>();
     private final boolean useMaps;
     private final Object unknownClass;
     private final boolean failOnUnknownType;
-    private final static Map<String, Class> coercedTypes = new LinkedHashMap<String, Class>();
+    private final static Map<String, Class> coercedTypes = new LinkedHashMap<>();
     // store the missing field found during deserialization to notify any client after the complete resolution is done
-    protected final Collection<Missingfields> missingFields = new ArrayList<Resolver.Missingfields>();
+    protected final Collection<Missingfields> missingFields = new ArrayList<>();
+    Class<?> singletonMap = Collections.singletonMap("foo", "bar").getClass();
 
     static {
         coercedTypes.put("java.util.Arrays$ArrayList", ArrayList.class);
@@ -73,6 +66,7 @@ abstract class Resolver
         coercedTypes.put("java.util.concurrent.ConcurrentSkipListMap$Values", ArrayList.class);
         coercedTypes.put("java.util.IdentityHashMap$KeySet", LinkedHashSet.class);
         coercedTypes.put("java.util.IdentityHashMap$Values", ArrayList.class);
+        coercedTypes.put("java.util.Collections$EmptyList", Collections.EMPTY_LIST.getClass());
     }
 
     /**
@@ -105,6 +99,7 @@ abstract class Resolver
     /**
      * stores missing fields information to notify client after the complete deserialization resolution
      */
+    @SuppressWarnings("FieldMayBeFinal")
     protected static class Missingfields
     {
         private Object target;
@@ -153,7 +148,7 @@ abstract class Resolver
      */
     protected Object convertMapsToObjects(final JsonObject<String, Object> root)
     {
-        final Deque<JsonObject<String, Object>> stack = new ArrayDeque<JsonObject<String, Object>>();
+        final Deque<JsonObject<String, Object>> stack = new ArrayDeque<>();
         stack.addFirst(root);
 
         while (!stack.isEmpty())
@@ -232,14 +227,14 @@ abstract class Resolver
     {
         // Convert @keys to a Collection of Java objects.
         convertMapToKeysItems(jsonObj);
-        final Object[] keys = (Object[]) jsonObj.get("@keys");
+        final Object[] keys = (Object[]) jsonObj.get(KEYS);
         final Object[] items = jsonObj.getArray();
 
         if (keys == null || items == null)
         {
             if (keys != items)
             {
-                throw new JsonIoException("Map written where one of @keys or @items is empty");
+                throw new JsonIoException("Map written where one of " + KEYS + " or @items is empty");
             }
             return;
         }
@@ -247,7 +242,7 @@ abstract class Resolver
         final int size = keys.length;
         if (size != items.length)
         {
-            throw new JsonIoException("Map written with @keys and @items entries of different sizes");
+            throw new JsonIoException("Map written with " + KEYS + " and @items entries of different sizes");
         }
 
         Object[] mapKeys = buildCollection(stack, keys, size);
@@ -261,7 +256,7 @@ abstract class Resolver
     private static Object[] buildCollection(Deque<JsonObject<String, Object>> stack, Object[] items, int size)
     {
         final JsonObject<String, Object> jsonCollection = new JsonObject<String, Object>();
-        jsonCollection.put("@items", items);
+        jsonCollection.put(ITEMS, items);
         final Object[] javaKeys = new Object[size];
         jsonCollection.target = javaKeys;
         stack.addFirst(jsonCollection);
@@ -276,7 +271,7 @@ abstract class Resolver
      */
     protected static void convertMapToKeysItems(final JsonObject<String, Object> map)
     {
-        if (!map.containsKey("@keys") && !map.isReference())
+        if (!map.containsKey(KEYS) && !map.isReference())
         {
             final Object[] keys = new Object[map.size()];
             final Object[] values = new Object[map.size()];
@@ -292,8 +287,8 @@ abstract class Resolver
             String saveType = map.getType();
             map.clear();
             map.setType(saveType);
-            map.put("@keys", keys);
-            map.put("@items", values);
+            map.put(KEYS, keys);
+            map.put(ITEMS, values);
         }
     }
 
@@ -318,13 +313,21 @@ abstract class Resolver
         String type = jsonObj.type;
 
         // We can't set values to an Object, so well try to use the contained type instead
-		if ("java.lang.Object".equals(type))
+        if ("java.lang.Object".equals(type))
         {
-			Object value = jsonObj.get("value");
-        	if (jsonObj.keySet().size() == 1 && value != null)
+            Object value = jsonObj.get("value");
+            if (jsonObj.keySet().size() == 1 && value != null)
             {
-        		type = value.getClass().getName();
-        	}
+                type = value.getClass().getName();
+            }
+        }
+        if (type == null)
+        {
+            Object mayEnumSpecial = jsonObj.get("@enum");
+            if (mayEnumSpecial instanceof String)
+            {
+                type = "java.util.EnumSet";
+            }
         }
 
         Object mate;
@@ -385,14 +388,36 @@ abstract class Resolver
                 }
                 else if (EnumSet.class.isAssignableFrom(c))
                 {
-                    mate = getEnumSet(c, jsonObj);
+                    mate = extractEnumSet(c, jsonObj);
+                }
+                else if (TimeZone.class.isAssignableFrom(c) && jsonObj.containsKey("zone"))
+                {
+                    mate = TimeZone.getTimeZone((String)jsonObj.get("zone"));
                 }
                 else if ((mate = coerceCertainTypes(c.getName())) != null)
                 {   // if coerceCertainTypes() returns non-null, it did the work
                 }
-                else
+                else if (singletonMap.isAssignableFrom(c))
+                {
+                    Object key = jsonObj.keySet().iterator().next();
+                    Object value = jsonObj.values().iterator().next();
+                    mate = Collections.singletonMap(key, value);
+                }
+                else if (!c.getName().startsWith("java.util.Immutable"))
                 {
                     mate = newInstance(c, jsonObj);
+                }
+                else if (c.getName().contains("Set"))
+                {
+                    mate = new ArrayList<>();
+                }
+                else if (c.getName().contains("List"))
+                {
+                    mate = new ArrayList<>();
+                }
+                else if (c.getName().contains("Map"))
+                {
+                    mate = new LinkedHashMap<>();
                 }
             }
         }
@@ -402,7 +427,7 @@ abstract class Resolver
 
             // if @items is specified, it must be an [] type.
             // if clazz.isArray(), then it must be an [] type.
-            if (clazz.isArray() || (items != null && clazz == Object.class && !jsonObj.containsKey("@keys")))
+            if (clazz.isArray() || (items != null && clazz == Object.class && !jsonObj.containsKey(KEYS)))
             {
                 int size = (items == null) ? 0 : items.length;
                 mate = Array.newInstance(clazz.isArray() ? clazz.getComponentType() : Object.class, size);
@@ -417,7 +442,7 @@ abstract class Resolver
             }
             else if (EnumSet.class.isAssignableFrom(clazz)) // anonymous subclass of an enum
             {
-                mate = getEnumSet(clazz, jsonObj);
+                mate = extractEnumSet(clazz, jsonObj);
             }
             else if ((mate = coerceCertainTypes(clazz.getName())) != null)
             {   // if coerceCertainTypes() returns non-null, it did the work
@@ -516,6 +541,18 @@ abstract class Resolver
         }
     }
 
+    private static enum OneEnum {
+        L1,
+        L2,
+        L3
+    }
+    /*
+    /* java 17 don't allow to call reflect on internal java api like EnumSet's implement, so need to create like this
+     */
+    private EnumSet getEmptyEnumSet() {
+        return EnumSet.noneOf(OneEnum.class);
+    }
+
     /**
      * Create the EnumSet with its values (it must be created this way)
      */
@@ -524,7 +561,8 @@ abstract class Resolver
         Object[] items = jsonObj.getArray();
         if (items == null || items.length == 0)
         {
-            return newInstance(c, jsonObj);
+            return getEmptyEnumSet();
+            //return newInstance(c, jsonObj);
         }
         JsonObject item = (JsonObject) items[0];
         String type = item.getType();
@@ -534,6 +572,54 @@ abstract class Resolver
         {
             item = (JsonObject) objectItem;
             Enum enumItem = (Enum) getEnum(enumClass, item);
+            if (enumSet == null)
+            {   // Lazy init the EnumSet
+                enumSet = EnumSet.of(enumItem);
+            }
+            else
+            {
+                enumSet.add(enumItem);
+            }
+        }
+        return enumSet;
+    }
+
+    protected EnumSet<?> extractEnumSet(Class c, JsonObject<String, Object> jsonObj)
+    {
+        String enumClassName = (String) jsonObj.get("@enum");
+        Class enumClass = enumClassName == null ? null
+			: MetaUtils.classForName(enumClassName, reader.getClassLoader());
+        Object[] items = jsonObj.getArray();
+        if (items == null || items.length == 0)
+        {
+			if (enumClass != null)
+			{
+				return EnumSet.noneOf(enumClass);
+			}
+			else
+			{
+				return EnumSet.noneOf(MetaUtils.Dumpty.class);
+			}
+        }
+		else if (enumClass == null)
+		{
+			throw new JsonIoException("Could not figure out Enum of the not empty set " + jsonObj);
+		}
+
+        EnumSet enumSet = null;
+        for (Object item : items)
+        {
+            Enum enumItem;
+            if (item instanceof String)
+            {
+                enumItem = Enum.valueOf(enumClass, (String)item);
+            }
+            else
+            {
+                JsonObject jsItem = (JsonObject) item;
+                enumItem = Enum.valueOf(enumClass, (String) jsItem.get("name"));
+            }
+
             if (enumSet == null)
             {   // Lazy init the EnumSet
                 enumSet = EnumSet.of(enumItem);
@@ -565,11 +651,29 @@ abstract class Resolver
                 {   // Patch up Indexable Collections
                     List list = (List) objToFix;
                     list.set(ref.index, objReferenced.target);
+                    String containingTypeName = ref.referencingObj.type;
+                    if (containingTypeName != null && containingTypeName.startsWith("java.util.Immutable") && containingTypeName.contains("List"))
+                    {
+                        if (list.stream().noneMatch(c -> c == null || c instanceof JsonObject))
+                        {
+                            list = List.of(list.toArray());
+                            ref.referencingObj.target = list;
+                        }
+                    }
                 }
                 else if (objToFix instanceof Collection)
-                {   // Add element (since it was not indexable, add it to collection)
+                {
+                    String containingTypeName = ref.referencingObj.type;
                     Collection col = (Collection) objToFix;
-                    col.add(objReferenced.target);
+                    if (containingTypeName != null && containingTypeName.startsWith("java.util.Immutable") && containingTypeName.contains("Set"))
+                    {
+                        throw new JsonIoException("Error setting set entry of ImmutableSet '" + ref.referencingObj.type + "', @ref = " + ref.refId);
+                    }
+                    else
+                    {
+                        // Add element (since it was not indexable, add it to collection)
+                        col.add(objReferenced.target);
+                    }
                 }
                 else
                 {
@@ -591,9 +695,8 @@ abstract class Resolver
                     }
                 }
             }
-
-            i.remove();
         }
+        unresolvedRefs.clear();
     }
 
     /**
@@ -620,8 +723,8 @@ abstract class Resolver
             if (useMapsLocal)
             {   // Make the @keys be the actual keys of the map.
                 map = jObj;
-                javaKeys = (Object[]) jObj.remove("@keys");
-                javaValues = (Object[]) jObj.remove("@items");
+                javaKeys = (Object[]) jObj.remove(KEYS);
+                javaValues = (Object[]) jObj.remove(ITEMS);
             }
             else
             {
@@ -631,12 +734,19 @@ abstract class Resolver
                 jObj.clear();
             }
 
-            int j = 0;
-
-            while (javaKeys != null && j < javaKeys.length)
+            if (singletonMap.isAssignableFrom(map.getClass()))
+            {   // Handle SingletonMaps - Do nothing here.  They are single entry maps.  The code before here
+                // has already instantiated the SingletonMap, and has filled in its values.
+            }
+            else
             {
-                map.put(javaKeys[j], javaValues[j]);
-                j++;
+                int j = 0;
+
+                while (javaKeys != null && j < javaKeys.length)
+                {
+                    map.put(javaKeys[j], javaValues[j]);
+                    j++;
+                }
             }
         }
     }

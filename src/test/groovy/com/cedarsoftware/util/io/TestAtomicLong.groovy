@@ -1,13 +1,13 @@
 package com.cedarsoftware.util.io
 
 import groovy.transform.CompileStatic
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import java.util.concurrent.atomic.AtomicLong
 
-import static org.junit.Assert.assertNotSame
-import static org.junit.Assert.assertNull
-import static org.junit.Assert.fail
+import static org.junit.jupiter.api.Assertions.assertNotSame
+import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertThrows
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -61,13 +61,7 @@ class TestAtomicLong
 
 
         json = '''{"@type":"com.cedarsoftware.util.io.TestAtomicLong$TestAtomicLongField","value":16.5}'''
-        try
-        {
-            JsonReader.jsonToJava(json)
-            fail()
-        }
-        catch (JsonIoException ignored)
-        { }
+        assertThrows(JsonIoException.class, { JsonReader.jsonToJava(json) })
     }
 
     @Test
@@ -89,7 +83,7 @@ class TestAtomicLong
         TestUtil.printLine("json=" + json)
         list = (List) TestUtil.readJsonObject(json)
         assert list.size() == 2
-        atomicInt = list.get(0)
+        atomicInt = (AtomicLong)list.get(0)
         assert atomicInt.get() == new AtomicLong(12345).get()
         assertNotSame(list.get(0), list.get(1))
     }

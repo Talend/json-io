@@ -1,9 +1,9 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -35,9 +35,8 @@ class TestInternalAPIs
     @Test
     void testDistanceToInterface()
     {
-        assertEquals(1, MetaUtils.getDistanceToInterface(Serializable.class, LinkedList.class))
-        assertEquals(3, MetaUtils.getDistanceToInterface(Iterable.class, LinkedList.class))
-        assertEquals(2, MetaUtils.getDistanceToInterface(Serializable.class, BigInteger.class))
+        // The values below can differ depending on the JDK versions, so be careful the classes chosen
+        assertEquals(1, MetaUtils.getDistance(Resolver.class, ObjectResolver.class))
     }
 
     @Test

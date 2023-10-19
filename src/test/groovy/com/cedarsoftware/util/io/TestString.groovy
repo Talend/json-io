@@ -1,11 +1,12 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import groovy.transform.CompileStatic
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertNotSame
-import static org.junit.Assert.assertSame
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotSame
+import static org.junit.jupiter.api.Assertions.assertSame
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -24,6 +25,7 @@ import static org.junit.Assert.assertTrue
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestString
 {
     private static class ManyStrings implements Serializable
@@ -45,7 +47,7 @@ class TestString
             StringBuffer s = new StringBuffer()
             for (int i = 0; i < MAX_UTF8_CHAR; i++)
             {
-                s.append((char) i)
+                s.append(i as char)
             }
             _range = s.toString()
 
@@ -78,7 +80,7 @@ class TestString
 
         for (int i = 0; i < ManyStrings.MAX_UTF8_CHAR; i++)
         {
-            assertTrue(that._range.charAt(i) == (char) i)
+            assertTrue(that._range.charAt(i) == (i as char))
         }
 
         // UTF-8 serialization makes it through clean.
@@ -132,5 +134,19 @@ class TestString
         String json = '"Réunion"'
         String x = TestUtil.readJsonObject(json)
         assert x == 'Réunion'
+    }
+
+    @Test
+    void testEmptyString()
+    {
+        // Ensure no exception is thrown
+        JsonReader.jsonToJava("");
+    }
+
+    @Test
+    void testNullInput()
+    {
+        // Ensure no exception is thrown
+        JsonReader.jsonToJava(null);
     }
 }

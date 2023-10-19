@@ -36,8 +36,13 @@ import java.util.Set;
  */
 public class JsonObject<K, V> extends LinkedHashMap<K, V>
 {
-    static Set<String> primitives = new HashSet<String>();
-    static Set<String> primitiveWrappers = new HashSet<String>();
+    public static final String KEYS = "@keys";
+    public static final String ITEMS = "@items";
+    public static final String ID = "@id";
+    public static final String REF = "@ref";
+    public static final String TYPE = "@type";
+    static Set<String> primitives = new HashSet<>();
+    static Set<String> primitiveWrappers = new HashSet<>();
 
     Object target;
     boolean isMap = false;
@@ -65,6 +70,11 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
         primitiveWrappers.add("java.lang.Integer");
         primitiveWrappers.add("java.lang.Long");
         primitiveWrappers.add("java.lang.Short");
+    }
+
+    public String toString()
+    {
+        return "mLen:" + getLenientSize() + " type:" + type + " l,c:" + line + "," + col + " id:" + id;
     }
 
 
@@ -177,12 +187,12 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
      */
     public boolean isReference()
     {
-        return containsKey("@ref");
+        return containsKey(REF);
     }
 
     public Long getReferenceId()
     {
-        return (Long) get("@ref");
+        return (Long) get(REF);
     }
 
     // Map APIs
@@ -198,7 +208,7 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
         {
             return true;
         }
-        if (containsKey("@items") && !containsKey("@keys"))
+        if (containsKey(ITEMS) && !containsKey(KEYS))
         {
             return type != null && !type.contains("[");
         }
@@ -214,7 +224,7 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
             {
                 return type.contains("[");
             }
-            return containsKey("@items") && !containsKey("@keys");
+            return containsKey(ITEMS) && !containsKey(KEYS);
         }
         return target.getClass().isArray();
     }
@@ -224,26 +234,35 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
     // example).
     public Object[] getArray()
     {
-        return (Object[]) get("@items");
+        return (Object[]) get(ITEMS);
     }
 
     public int getLength()
     {
+        Integer items = getLenientSize();
+        if (items != null)
+        {
+            return items;
+        }
+        throw new JsonIoException("getLength() called on a non-collection, line " + line + ", col " + col);
+    }
+
+    private Integer getLenientSize() {
         if (isArray())
         {
             if (target == null)
             {
-                Object[] items = (Object[]) get("@items");
+                Object[] items = (Object[]) get(ITEMS);
                 return items == null ? 0 : items.length;
             }
             return Array.getLength(target);
         }
         if (isCollection() || isMap())
         {
-            Object[] items = (Object[]) get("@items");
+            Object[] items = (Object[]) get(ITEMS);
             return items == null ? 0 : items.length;
         }
-        throw new JsonIoException("getLength() called on a non-collection, line " + line + ", col " + col);
+        return null;
     }
 
     public Class getComponentType()
@@ -292,19 +311,19 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
             return super.put(null, value);
         }
 
-        if (key.equals("@type"))
+        if (key.equals(TYPE))
         {
             String oldType = type;
             type = (String) value;
             return (V) oldType;
         }
-        else if (key.equals("@id"))
+        else if (key.equals(ID))
         {
             Long oldId = id;
             id = (Long) value;
             return (V) oldId;
         }
-        else if (("@items".equals(key) && containsKey("@keys")) || ("@keys".equals(key) && containsKey("@items")))
+        else if ((ITEMS.equals(key) && containsKey(KEYS)) || (KEYS.equals(key) && containsKey(ITEMS)))
         {
             isMap = true;
         }
@@ -319,7 +338,7 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
 
     void clearArray()
     {
-        remove("@items");
+        remove(ITEMS);
     }
 
     /**
@@ -340,9 +359,9 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
 
     public int size()
     {
-        if (containsKey("@items"))
+        if (containsKey(ITEMS))
         {
-            Object value = get("@items");
+            Object value = get(ITEMS);
             if (value instanceof Object[])
             {
                 return ((Object[])value).length;
@@ -356,7 +375,7 @@ public class JsonObject<K, V> extends LinkedHashMap<K, V>
                 throw new JsonIoException("JsonObject with @items, but no array [] associated to it, line " + line + ", col " + col);
             }
         }
-        else if (containsKey("@ref"))
+        else if (containsKey(REF))
         {
             return 0;
         }

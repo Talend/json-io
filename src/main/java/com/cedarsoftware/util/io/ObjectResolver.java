@@ -5,13 +5,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static com.cedarsoftware.util.io.JsonObject.ITEMS;
+import static com.cedarsoftware.util.io.JsonObject.KEYS;
 
 /**
  * <p>The ObjectResolver converts the raw Maps created from the JsonParser to Java
@@ -54,6 +51,7 @@ import java.util.Map;
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@SuppressWarnings({ "rawtypes", "unchecked", "Convert2Diamond" })
 public class ObjectResolver extends Resolver
 {
     private final ClassLoader classLoader;
@@ -80,6 +78,18 @@ public class ObjectResolver extends Resolver
      */
     public void traverseFields(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj)
     {
+        this.traverseFields(stack, jsonObj, JsonWriter.EMPTY_SET);
+    }
+
+    /**
+     * Walk the Java object fields and copy them from the JSON object to the Java object, performing
+     * any necessary conversions on primitives, or deep traversals for field assignments to other objects,
+     * arrays, Collections, or Maps.
+     * @param stack   Stack (Deque) used for graph traversal.
+     * @param jsonObj a Map-of-Map representation of the current object being examined (containing all fields).
+     */
+    public void traverseFields(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj, Set<String> excludeFields)
+    {
         final Object javaMate = jsonObj.target;
         final Iterator<Map.Entry<String, Object>> i = jsonObj.entrySet().iterator();
         final Class cls = javaMate.getClass();
@@ -97,8 +107,16 @@ public class ObjectResolver extends Resolver
             else if (missingFieldHandler != null)
             {
                 handleMissingField(stack, jsonObj, rhs, key);
-            }//else no handler so ignor.
+            }//else no handler so ignore.
         }
+    }
+
+    static boolean isBasicWrapperType(Class clazz)
+    {
+        return clazz == Boolean.class || clazz == Integer.class ||
+            clazz == Short.class || clazz == Character.class ||
+            clazz == Byte.class || clazz == Long.class ||
+            clazz == Double.class || clazz == Float.class;
     }
 
     /**
@@ -114,6 +132,7 @@ public class ObjectResolver extends Resolver
                                final Field field, final Object rhs)
     {
         final Object target = jsonObj.target;
+        final Class targetClass = target.getClass();
         try
         {
             final Class fieldType = field.getType();
@@ -121,7 +140,11 @@ public class ObjectResolver extends Resolver
             {   // Logically clear field (allows null to be set against primitive fields, yielding their zero value.
                 if (fieldType.isPrimitive())
                 {
-                    field.set(target, MetaUtils.convert(fieldType, "0"));
+                    if(isBasicWrapperType(targetClass)) {
+                        jsonObj.target = MetaUtils.convert(fieldType, "0");
+                    } else {
+                        field.set(target, MetaUtils.convert(fieldType, "0"));
+                    }
                 }
                 else
                 {
@@ -160,7 +183,14 @@ public class ObjectResolver extends Resolver
             }
             else if ((special = readIfMatching(rhs, fieldType, stack)) != null)
             {
-                field.set(target, special);
+                if (Enum.class.isAssignableFrom(fieldType) && special instanceof String) {
+                    field.set(target, Enum.valueOf(fieldType, (String) special));
+                    //TODO enum class create a field also named : "name"? that's not good rule, so will not consider that
+                } else if (Enum.class.isAssignableFrom(field.getDeclaringClass()) && "name".equals(field.getName())) {
+                    //no need to set for this case
+                } else {
+                    field.set(target, special);
+                }
             }
             else if (rhs.getClass().isArray())
             {    // LHS of assignment is an [] field or RHS is an array and LHS is Object
@@ -180,7 +210,7 @@ public class ObjectResolver extends Resolver
                 }
                 else
                 {
-                    jsonArray.put("@items", elements);
+                    jsonArray.put(ITEMS, elements);
                     createJavaObjectInstance(fieldType, jsonArray);
                     field.set(target, jsonArray.target);
                     stack.addFirst(jsonArray);
@@ -188,8 +218,8 @@ public class ObjectResolver extends Resolver
             }
             else if (rhs instanceof JsonObject)
             {
-                final JsonObject<String, Object> jObj = (JsonObject) rhs;
-                final Long ref = jObj.getReferenceId();
+                final JsonObject<String, Object> jsRhs = (JsonObject) rhs;
+                final Long ref = jsRhs.getReferenceId();
 
                 if (ref != null)
                 {    // Correct field references
@@ -206,10 +236,19 @@ public class ObjectResolver extends Resolver
                 }
                 else
                 {    // Assign ObjectMap's to Object (or derived) fields
-                    field.set(target, createJavaObjectInstance(fieldType, jObj));
-                    if (!MetaUtils.isLogicalPrimitive(jObj.getTargetClass()))
+                    Object fieldObject = createJavaObjectInstance(fieldType, jsRhs);
+                    field.set(target, fieldObject);
+                    if (!MetaUtils.isLogicalPrimitive(jsRhs.getTargetClass()))
                     {
-                        stack.addFirst((JsonObject) rhs);
+                        // GOTCHA : if the field is an immutable collection,
+                        // "work instance", where one can accumulate items in (ArrayList)
+                        // and "final instance' (say List.of() ) can _not_ be the same.
+                        // So, the later the assignment, the better.
+                        Object javaObj = convertMapsToObjects(jsRhs);
+                        if (javaObj != fieldObject)
+                        {
+                            field.set(target, javaObj);
+                        }
                     }
                 }
             }
@@ -217,7 +256,11 @@ public class ObjectResolver extends Resolver
             {
                 if (MetaUtils.isPrimitive(fieldType))
                 {
-                    field.set(target, MetaUtils.convert(fieldType, rhs));
+                    if(isBasicWrapperType(targetClass)) {
+                        jsonObj.target = MetaUtils.convert(fieldType, rhs);
+                    } else {
+                        field.set(target, MetaUtils.convert(fieldType, rhs));
+                    }
                 }
                 else if (rhs instanceof String && "".equals(((String) rhs).trim()) && fieldType != String.class)
                 {   // Allow "" to null out a non-String field
@@ -240,10 +283,9 @@ public class ObjectResolver extends Resolver
         }
     }
 
-
     /**
-     * Try to create an java object from the missing field.
-	 * Mosly primitive types and jsonObject that contains @type attribute will
+     * Try to create a java object from the missing field.
+	 * Mostly primitive types and jsonObject that contains @type attribute will
 	 * be candidate for the missing field callback, others will be ignored. 
 	 * All missing field are stored for later notification
      *
@@ -333,8 +375,7 @@ public class ObjectResolver extends Resolver
     {
         missingFields.add(new Missingfields(target, missingField, value));
     }
-
-
+    
     /**
      * @param o Object to turn into a String
      * @return .toString() version of o or "null" if o is null.
@@ -366,12 +407,33 @@ public class ObjectResolver extends Resolver
      */
     protected void traverseCollection(final Deque<JsonObject<String, Object>> stack, final JsonObject<String, Object> jsonObj)
     {
+        final String className = jsonObj.type;
         final Object[] items = jsonObj.getArray();
         if (items == null || items.length == 0)
         {
+            if (className != null && className.startsWith("java.util.Immutable"))
+            {
+                if (className.contains("Set"))
+                {
+                    jsonObj.target = Set.of();
+                }
+                else if (className.contains("List"))
+                {
+                    jsonObj.target = List.of();
+                }
+            }
             return;
         }
-        final Collection col = (Collection) jsonObj.target;
+
+        Class mayEnumClass = null;
+        String mayEnumClasName = (String)jsonObj.get("@enum");
+        if (mayEnumClasName != null)
+        {
+            mayEnumClass = MetaUtils.classForName(mayEnumClasName, classLoader);
+        }
+
+        final boolean isImmutable = className != null && className.startsWith("java.util.Immutable");
+        final Collection col = isImmutable ? new ArrayList() : (Collection) jsonObj.target;
         final boolean isList = col instanceof List;
         int idx = 0;
 
@@ -392,12 +454,15 @@ public class ObjectResolver extends Resolver
             }
             else if (element instanceof String || element instanceof Boolean || element instanceof Double || element instanceof Long)
             {    // Allow Strings, Booleans, Longs, and Doubles to be "inline" without Java object decoration (@id, @type, etc.)
-                col.add(element);
+                if (mayEnumClass == null)
+                    col.add(element);
+                else
+                    col.add(Enum.valueOf(mayEnumClass, (String)element));
             }
             else if (element.getClass().isArray())
             {
                 final JsonObject jObj = new JsonObject();
-                jObj.put("@items", element);
+                jObj.put(ITEMS, element);
                 createJavaObjectInstance(Object.class, jObj);
                 col.add(jObj.target);
                 convertMapsToObjects(jObj);
@@ -432,13 +497,57 @@ public class ObjectResolver extends Resolver
                     {
                         convertMapsToObjects(jObj);
                     }
-                    col.add(jObj.target);
+                    
+                    if (!(col instanceof EnumSet))
+                    {   // EnumSet has already had it's items added to it.
+                        col.add(jObj.target);
+                    }
                 }
             }
             idx++;
         }
 
-        jsonObj.remove("@items");   // Reduce memory required during processing
+        reconcileCollection(jsonObj, col);
+        jsonObj.remove(ITEMS);   // Reduce memory required during processing
+    }
+
+    static public void reconcileCollection(JsonObject jsonObj, Collection col)
+    {
+        final String className = jsonObj.type;
+        final boolean isImmutable = className != null && className.startsWith("java.util.Immutable");
+        
+        if (!isImmutable)
+        {
+            return;
+        }
+        if (col == null && jsonObj.target instanceof Collection)
+        {
+            col = (Collection) jsonObj.target;
+        }
+        if (col == null)
+        {
+            return;
+        }
+
+        if (className.contains("List"))
+        {
+            if (col.stream().noneMatch(c -> c == null || c instanceof JsonObject))
+            {
+                jsonObj.target = List.of(col.toArray());
+            }
+            else
+            {
+                jsonObj.target = col;
+            }
+        }
+        else if (className.contains("Set"))
+        {
+            jsonObj.target = Set.of(col.toArray());
+        }
+        else
+        {
+            jsonObj.target = col;
+        }
     }
 
     /**
@@ -492,6 +601,9 @@ public class ObjectResolver extends Resolver
             }
             else if ((special = readIfMatching(element, compType, stack)) != null)
             {
+                if (compType.isEnum() && special instanceof String) {
+                    special = Enum.valueOf(compType, (String)special);
+                }
                 Array.set(array, i, special);
             }
             else if (isPrimitive)
@@ -523,7 +635,7 @@ public class ObjectResolver extends Resolver
                 else
                 {
                     JsonObject<String, Object> jsonObject = new JsonObject<String, Object>();
-                    jsonObject.put("@items", element);
+                    jsonObject.put(ITEMS, element);
                     Array.set(array, i, createJavaObjectInstance(compType, jsonObject));
                     stack.addFirst(jsonObject);
                 }
@@ -675,7 +787,7 @@ public class ObjectResolver extends Resolver
         {
             read = ((JsonReader.JsonClassReader)closestReader).read(o, stack);
         }
-		return read;
+        return read;
     }
 
     private void markUntypedObjects(final Type type, final Object rhs, final Map<String, Field> classFields)
@@ -704,15 +816,15 @@ public class ObjectResolver extends Resolver
                 if (Map.class.isAssignableFrom(clazz))
                 {
                     Map map = (Map) instance;
-                    if (!map.containsKey("@keys") && !map.containsKey("@items") && map instanceof JsonObject)
+                    if (!map.containsKey(KEYS) && !map.containsKey(ITEMS) && map instanceof JsonObject)
                     {   // Maps created in Javascript will come over without @keys / @items.
                         convertMapToKeysItems((JsonObject) map);
                     }
 
-                    Object[] keys = (Object[])map.get("@keys");
+                    Object[] keys = (Object[])map.get(KEYS);
                     getTemplateTraverseWorkItem(stack, keys, typeArgs[0]);
 
-                    Object[] items = (Object[])map.get("@items");
+                    Object[] items = (Object[])map.get(ITEMS);
                     getTemplateTraverseWorkItem(stack, items, typeArgs[1]);
                 }
                 else if (Collection.class.isAssignableFrom(clazz))
@@ -734,7 +846,7 @@ public class ObjectResolver extends Resolver
                                 JsonObject coll = new JsonObject();
                                 coll.type = clazz.getName();
                                 List items = Arrays.asList((Object[]) vals);
-                                coll.put("@items", items.toArray());
+                                coll.put(ITEMS, items.toArray());
                                 stack.addFirst(new Object[]{t, items});
                                 array[i] = coll;
                             }
@@ -781,7 +893,12 @@ public class ObjectResolver extends Resolver
 
                                 if (field != null && (field.getType().getTypeParameters().length > 0 || field.getGenericType() instanceof TypeVariable))
                                 {
-                                    stack.addFirst(new Object[]{typeArgs[0], entry.getValue()});
+                                    Object pt = typeArgs[0];
+                                    if (entry.getValue() instanceof JsonObject && ((JsonObject)entry.getValue()).get("@enum") != null)
+                                    {
+                                        pt = field.getGenericType();
+                                    }
+                                    stack.addFirst(new Object[]{pt, entry.getValue()});
                                 }
                             }
                         }

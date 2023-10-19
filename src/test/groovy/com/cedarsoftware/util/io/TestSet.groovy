@@ -1,10 +1,10 @@
 package com.cedarsoftware.util.io
 
 import groovy.transform.CompileStatic
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
  *         <br>
@@ -98,12 +98,13 @@ class TestSet
         assertTrue(testSet._emptyEnumSet.containsAll(EnumSet.allOf(ManySets.EmptyValues)))
         assertTrue(testSet._setOfEnums.containsAll(EnumSet.allOf(ManySets.EnumValues)))
 
-//        testSet._enumSet.remove(ManySets.EnumValues.E1)
-//        testSet._enumSet.remove(ManySets.EnumValues.E2)
-//        testSet._enumSet.remove(ManySets.EnumValues.E3)
-//        json = TestUtil.getJsonString(testSet)
-//        println json
-//        testSet = (ManySets) TestUtil.readJsonObject(json)
+        testSet._enumSet.remove(ManySets.EnumValues.E1)
+        testSet._enumSet.remove(ManySets.EnumValues.E2)
+        testSet._enumSet.remove(ManySets.EnumValues.E3)
+        json = TestUtil.getJsonString(testSet)
+        println json
+        testSet = (ManySets) TestUtil.readJsonObject(json)
+        // TODO: This line throws a ClassCastException - the Enum being added is not the same type as the one used to create the empty EnumSet
 //        testSet._enumSet.add(ManySets.EnumValues.E1)
     }
 }

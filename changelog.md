@@ -1,4 +1,37 @@
 ### Revision History
+* 4.14.2
+  * Enum/EnumSet support fully added @kpartlow
+* 4.14.1
+  * JDK 1.8 is target class file format. @laurgarn
+  * JDK 11 is source file format. @laurgarn
+  * Bug fix: EnumSet support fixed. @laurgarn
+  * Bug fix: Null boxed primitives are preserved round-trip. @laurgarn
+  * Enhancement: Filter Blacklisted Fields Before Trying to Access them to prevent exceptions thrown by Proxies (improve hibernate support) @kpartlow
+  * Bug fix: Stack overflow error caused by json-io parsing of untrusted JSON String @PoppingSnack
+  * Enhancement: Create gradle-publish.yml @devlynnx
+  * Enhancement: Added record deserialization, which implies java 16 codebase @reuschling
+  * Bug fix: Fixed TestJavaScript @h143570
+  * Enhancement: Bump gson from 2.6.2 to 2.8.9 @dependabot
+  * Enhancement: support deserialization of Collections.EmptyList on JDK17 @ozhelezniak-talend
+* 4.14.0
+  * Bug fix: Enum serialization error with Java 17 #155.  According to @wweng-talend, if you set : "--illegal-access=deny" on jvm parameters, it works the same between jdk11 and jdk17. 
+  * Bug fix: java.lang primitives serialization - JDK-8256358 - JDK 17 support #154. Fix by @wwang-talend.
+  * Bug fix: failed to deserialize EnumSet with json without type #120.  Fix by @sgandon and @wwang-talend
+* 4.13.0
+   * Enhancement: Clear unresolved references after all have been processed, as opposed to removing each one after it was processed.  
+* 4.12.0
+  * Bug fix: Enhancement #137 introduced bug for negative numbers on simple values when tolerant/lenient parsing of +/- infinity was turned on.
+* 4.11.1
+  * Enhancement (#140): New option flag added `FORCE_MAP_FORMAT_ARRAY_KEYS_ITEMS:true|false` to allow forcing JSON output format to always write `Map` as `@keys/@items` in the JSON (example: `{"@keys":["a", "b"], "@values":[1, 2]}`, rather than its default behavior of recognizing all `String` keys and writing the `Map` as a JSON object, example: `{"a":1, "b":2}.`  The default value for this flag is `false`.  
+* 4.11.0
+  * Enhancement (#137): Allow tolerant/lenient parser of +/- infinity and NaN.  New API added, `JsonReader.setAllowNanAndInfinity(boolean)` and `JsonWriter.setAllowNanAndInfinity(boolean)`.  The default is `false` to match the JSON standard.
+  * Enhancement (#129): `JsonReader.jsonToJava("")` or `JsonReader.jsonToJava(null)` now returns a `null`, rather than throwing an exception.
+  * Bug fix (#123): Removed vulnerability by disallowing `ProcessBuilder` to be serialized.
+  * Bug fix (#124): Illegal Reflective Access warning when using json-io in Java 9 or newer.  This was do to call `isAccessible()` on Java's `Field` class.  This has been removed.
+  * Bug fix (#132, #133): There was instance when @i was written when it should have been @e, indicating items, when using SHORT_META_KEYS flag. 
+  * Bug fix (#135): When reading `{ "@type": "char", "value": "\"" }`, the value was read in as `\u0000`.  It now reads in correctly as a double quote character.
+* 4.10.1
+  * Enhancement: Made `FastPushbackBufferedReader` constructor public so that this stream reader can be used anywhere.
 * 4.10.0
   * Bug fix: When reading into `Maps`, logical primitives that are not `long`, `double`, `boolean`, or `null`, were being kept in `JsonObjects` instead of being converted into their respective types (`int`, `float`, `Date`, etc.) 
 * 4.9.12

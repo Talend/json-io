@@ -1,9 +1,9 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -27,9 +27,6 @@ class TestWriters
     @Test
     void testUnusedAPIs()
     {
-        Writers.TimeZoneWriter tzw = new Writers.TimeZoneWriter()
-        tzw.writePrimitiveForm("", new StringWriter())
-
         Writers.CalendarWriter cw = new Writers.CalendarWriter()
         cw.writePrimitiveForm("", new StringWriter())
 
@@ -46,8 +43,8 @@ class TestWriters
     @Test
     void testNumericTruth()
     {
-        assertFalse JsonWriter.isTrue(new BigInteger(0))
-        assertTrue JsonWriter.isTrue(new BigInteger(1))
+        assertFalse JsonWriter.isTrue(BigInteger.valueOf(0))
+        assertTrue JsonWriter.isTrue(BigInteger.valueOf(1))
         assertFalse JsonWriter.isTrue(new BigDecimal(0.0))
         assertTrue JsonWriter.isTrue(new BigDecimal(1.1))
         assertFalse JsonWriter.isTrue(0.0d)

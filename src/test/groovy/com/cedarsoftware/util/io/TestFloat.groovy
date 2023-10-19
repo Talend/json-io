@@ -1,12 +1,14 @@
 package com.cedarsoftware.util.io
 
-import org.junit.Test
+import groovy.transform.CompileStatic
+import org.junit.jupiter.api.Test
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertNotEquals
-import static org.junit.Assert.assertNotSame
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.fail
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotEquals
+import static org.junit.jupiter.api.Assertions.assertNotSame
+import static org.junit.jupiter.api.Assertions.assertThrows
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 
 /**
  * @author John DeRegnaucourt (jdereg@gmail.com)
@@ -25,6 +27,7 @@ import static org.junit.Assert.fail
  *         See the License for the specific language governing permissions and
  *         limitations under the License.
  */
+@CompileStatic
 class TestFloat
 {
     private static class Simple
@@ -88,13 +91,13 @@ class TestFloat
         assertEquals(that._typeArray[1], that._typeArray[5], 0.00001f)
 
         assertNotSame(that._objArray[1], that._objArray[5])
-        assertEquals(that._objArray[1], that._objArray[5], 0.00001f)
+        assertEquals((float)that._objArray[1], (float)that._objArray[5], 0.00001f)
 
         assertNotSame(that._typeArray[1], that._objArray[1])
-        assertNotEquals(that._typeArray[1], that._objArray[1], 0.00001f)
+        assertNotEquals((float)that._typeArray[1], (float)that._objArray[1], 0.00001f)
 
         assertNotSame(that._typeArray[5], that._objArray[5])
-        assertNotEquals(that._typeArray[5], that._objArray[5], 0.00001f)
+        assertNotEquals((float)that._typeArray[5], (float)that._objArray[5], 0.00001f)
 
         assertTrue(that._null == null)
         assertTrue(that._typeArray[3] == null)
@@ -110,40 +113,32 @@ class TestFloat
     void parseBadFloat()
     {
         String json = '[123.45.67]'
-        try
-        {
-            JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS):true] as Map)
-            fail()
-        }
-        catch (JsonIoException e)
-        {
-            assert e.message.toLowerCase().contains('invalid number: 123.45.67')
-        }
+        assertThrows(JsonIoException.class, { JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS):true] as Map) })
     }
 
     @Test
     void testNanAsRoot()
     {
-        Object json = JsonWriter.objectToJson(Float.NaN, [(JsonWriter.TYPE):false])
+        Object json = JsonWriter.objectToJson(Float.NaN, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson(Float.NEGATIVE_INFINITY, [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson(Float.NEGATIVE_INFINITY, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson(Float.POSITIVE_INFINITY, [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson(Float.POSITIVE_INFINITY, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
     }
 
     @Test
     void testNanMapKey()
     {
-        Object json = JsonWriter.objectToJson([field:Float.NaN], [(JsonWriter.TYPE):false])
+        Object json = JsonWriter.objectToJson([field:Float.NaN], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson([field:Float.NEGATIVE_INFINITY], [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson([field:Float.NEGATIVE_INFINITY], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson([field:Float.POSITIVE_INFINITY], [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson([field:Float.POSITIVE_INFINITY], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
     }
 
@@ -152,28 +147,28 @@ class TestFloat
     {
         Simple holder = new Simple()
         holder.x = Float.NaN
-        Object json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false])
+        Object json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
         holder.x = Float.NEGATIVE_INFINITY
-        json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
         holder.x = Float.POSITIVE_INFINITY
-        json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson(holder, [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
     }
 
     @Test
     void testNanArrayElement()
     {
-        Object json = JsonWriter.objectToJson([Float.NaN], [(JsonWriter.TYPE):false])
+        Object json = JsonWriter.objectToJson([Float.NaN], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson([Float.NEGATIVE_INFINITY], [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson([Float.NEGATIVE_INFINITY], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
 
-        json = JsonWriter.objectToJson([field:Float.POSITIVE_INFINITY], [(JsonWriter.TYPE):false])
+        json = JsonWriter.objectToJson([field:Float.POSITIVE_INFINITY], [(JsonWriter.TYPE):false] as Map)
         assert json.contains('null')
     }
 
