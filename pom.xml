@@ -179,6 +179,7 @@
                 <configuration>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+		    <failOnError>false</failOnError>
                 </configuration>
                 <executions>
                     <execution>
