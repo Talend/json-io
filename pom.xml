@@ -6,7 +6,7 @@
     <groupId>com.cedarsoftware</groupId>
     <artifactId>json-io</artifactId>
     <packaging>bundle</packaging>
-    <version>4.14.0</version>
+    <version>4.14.0-TALEND</version>
     <description>Java JSON serialization</description>
     <url>https://github.com/jdereg/json-io</url>
 
@@ -93,12 +93,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>snapshots</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/repositories/TalendOpenSourceSnapshot/</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>releases</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/repositories/TalendOpenSourceRelease/</url>
         </repository>
     </distributionManagement>
 
@@ -175,7 +175,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.6.0</version>
                 <configuration>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
