@@ -94,11 +94,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>snapshots</id>
-            <url>https://artifact-oss.talend.com/nexus/content/repositories/TalendOpenSourceSnapshot/</url>
+            <url>https://artifact-oss.talend.com/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
         <repository>
             <id>releases</id>
-            <url>https://artifact-oss.talend.com/nexus/content/repositories/TalendOpenSourceRelease/</url>
+            <url>https://artifact-oss.talend.com/nexus/content/repositories/releases/</url>
         </repository>
     </distributionManagement>
 
