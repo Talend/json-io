@@ -5,7 +5,7 @@
     <groupId>com.cedarsoftware</groupId>
     <artifactId>json-io</artifactId>
     <packaging>bundle</packaging>
-    <version>4.26.0</version>
+    <version>4.26.0-talend</version>
     <description>Java JSON serialization</description>
     <url>https://github.com/jdereg/json-io</url>
 
@@ -112,12 +112,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>talend.oss.snapshots</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/repositories/TalendOpenSourceSnapshot/</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>talend.oss.releases</id>
+            <url>https://artifacts-oss.talend.com/nexus/content/repositories/TalendOpenSourceRelease/</url>
         </repository>
     </distributionManagement>
 
@@ -168,7 +168,7 @@
                             com.cedarsoftware.io.reflect,
                             com.cedarsoftware.io.reflect.filters,
                             com.cedarsoftware.io.reflect.filters.field,
-                            com.cedarsoftware.io.reflect.filters.method
+                            com.cedarsoftware.io.reflect.filters.method;version=4.26.0.talend
                         </Export-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
@@ -228,6 +228,8 @@
                 </executions>
             </plugin>
 
+            <!-- we don't need it for Talend build -->
+            <!--
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -239,6 +241,7 @@
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
+            -->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
