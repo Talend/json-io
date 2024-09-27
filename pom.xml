@@ -5,7 +5,7 @@
     <groupId>com.cedarsoftware</groupId>
     <artifactId>json-io</artifactId>
     <packaging>bundle</packaging>
-    <version>4.26.2-talend</version>
+    <version>4.26.3-talend</version>
     <description>Java JSON serialization</description>
     <url>https://github.com/jdereg/json-io</url>
 
@@ -168,7 +168,7 @@
                             com.cedarsoftware.io.reflect,
                             com.cedarsoftware.io.reflect.filters,
                             com.cedarsoftware.io.reflect.filters.field,
-                            com.cedarsoftware.io.reflect.filters.method;version=4.26.2.talend
+                            com.cedarsoftware.io.reflect.filters.method;version=4.26.3.talend
                         </Export-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
