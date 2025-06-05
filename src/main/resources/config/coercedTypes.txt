@@ -1,0 +1,27 @@
+#
+# List of coerced types.
+# source type name =  destination type name.
+#
+java.time.ZoneRegion = java.time.ZoneId
+
+java.util.Arrays$ArrayList = java.util.ArrayList
+
+java.util.concurrent.ConcurrentHashMap$KeySetView = com.cedarsoftware.util.ConcurrentSet
+java.util.concurrent.ConcurrentHashMap$ValuesView = com.cedarsoftware.util.ConcurrentList
+java.util.concurrent.ConcurrentSkipListMap$KeySet = com.cedarsoftware.util.ConcurrentNavigableSetNullSafe
+java.util.concurrent.ConcurrentSkipListMap$Values = com.cedarsoftware.util.ConcurrentList
+
+java.util.HashMap$KeySet = java.util.HashSet
+java.util.HashMap$Values = java.util.ArrayList
+
+java.util.IdentityHashMap$KeySet = java.util.LinkedHashSet
+java.util.IdentityHashMap$Values = java.util.ArrayList
+
+java.util.LinkedHashMap$LinkedKeySet = java.util.LinkedHashSet
+java.util.LinkedHashMap$LinkedValues = java.util.ArrayList
+
+java.util.TreeMap$KeySet = java.util.TreeSet
+java.util.TreeMap$Values = java.util.ArrayList
+
+java.util.RegularEnumSet = java.util.EnumSet
+java.util.JumboEnumSet = java.util.EnumSet

@@ -1,0 +1,9 @@
+{
+  "@type": "com.cedarsoftware.io.OffsetDateTimeTests$NestedOffsetDateTime",
+  "one": {
+    "offsetDateTime": "2027-12-23T06:07:16.000002Z"
+  },
+  "two": {
+    "offsetDateTime": "2027-12-23T06:07:16.000002+05:00"
+  }
+}

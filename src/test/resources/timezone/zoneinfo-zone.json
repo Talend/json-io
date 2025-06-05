@@ -1,1 +1,4 @@
-{"@type":"sun.util.calendar.ZoneInfo","zone":"EST"}
+{
+  "@type": "sun.util.calendar.ZoneInfo",
+  "value": "EST"
+}

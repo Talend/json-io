@@ -1,0 +1,5 @@
+{
+  "@type": "com.cedarsoftware.io.EnumTests$EnumWithValueField",
+  "value": "foo.com",
+  "name": "FOO"
+}

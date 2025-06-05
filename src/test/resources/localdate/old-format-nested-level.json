@@ -1,0 +1,9 @@
+{
+  "@type": "com.cedarsoftware.io.LocalDateTests$NestedLocalDate",
+  "one": {
+    "localDate": "2014-06-13"
+  },
+  "two": {
+    "localDate": "2024-09-12"
+  }
+}

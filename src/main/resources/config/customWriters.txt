@@ -1,0 +1,71 @@
+#
+# Map of class to JsonWriter.JsonClassWriter
+#
+boolean = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+char = com.cedarsoftware.io.Writers$CharacterWriter
+double = com.cedarsoftware.io.Writers$DoubleWriter
+float = com.cedarsoftware.io.Writers$FloatWriter
+int = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+long = com.cedarsoftware.io.writers.LongWriter
+short = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+
+java.lang.Boolean = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.lang.Byte = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.lang.Character = com.cedarsoftware.io.Writers$CharacterWriter
+java.lang.Class = com.cedarsoftware.io.Writers$ClassWriter
+java.lang.Double = com.cedarsoftware.io.Writers$DoubleWriter
+java.lang.Float = com.cedarsoftware.io.Writers$FloatWriter
+java.lang.Integer = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.lang.Long = com.cedarsoftware.io.writers.LongWriter
+java.lang.Short = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.lang.String = com.cedarsoftware.io.Writers$JsonStringWriter
+java.lang.StringBuffer = com.cedarsoftware.io.Writers$PrimitiveUtf8StringWriter
+java.lang.StringBuilder = com.cedarsoftware.io.Writers$PrimitiveUtf8StringWriter
+
+java.math.BigDecimal = com.cedarsoftware.io.Writers$BigDecimalWriter
+java.math.BigInteger = com.cedarsoftware.io.Writers$BigIntegerWriter
+
+java.net.URL = com.cedarsoftware.io.Writers$PrimitiveUtf8StringWriter
+java.net.URI = com.cedarsoftware.io.Writers$PrimitiveUtf8StringWriter
+
+java.nio.ByteBuffer = com.cedarsoftware.io.writers.ByteBufferWriter
+java.nio.CharBuffer = com.cedarsoftware.io.writers.CharBufferWriter
+
+java.sql.Date = com.cedarsoftware.io.Writers$DateWriter
+java.sql.Timestamp = com.cedarsoftware.io.Writers$TimestampWriter
+
+java.time.Duration = com.cedarsoftware.io.Writers$DurationWriter
+java.time.Instant = com.cedarsoftware.io.Writers$InstantWriter
+java.time.LocalDate = com.cedarsoftware.io.Writers$LocalDateWriter
+java.time.LocalDateTime = com.cedarsoftware.io.Writers$LocalDateTimeWriter
+java.time.LocalTime = com.cedarsoftware.io.Writers$LocalTimeWriter
+java.time.MonthDay = com.cedarsoftware.io.Writers$MonthDayWriter
+java.time.OffsetDateTime = com.cedarsoftware.io.Writers$OffsetDateTimeWriter
+java.time.OffsetTime = com.cedarsoftware.io.Writers$OffsetTimeWriter
+java.time.Period = com.cedarsoftware.io.Writers$PeriodWriter
+java.time.Year = com.cedarsoftware.io.Writers$YearWriter
+java.time.YearMonth = com.cedarsoftware.io.Writers$YearMonthWriter
+java.time.ZonedDateTime = com.cedarsoftware.io.Writers$ZonedDateTimeWriter
+java.time.ZoneId = com.cedarsoftware.io.writers.ZoneIdWriter
+java.time.ZoneOffset = com.cedarsoftware.io.Writers$ZoneOffsetWriter
+
+java.util.Calendar = com.cedarsoftware.io.Writers$CalendarWriter
+java.util.concurrent.atomic.AtomicBoolean = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.util.concurrent.atomic.AtomicInteger = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.util.concurrent.atomic.AtomicLong = com.cedarsoftware.io.Writers$PrimitiveValueWriter
+java.util.Currency = com.cedarsoftware.io.Writers$CurrencyWriter
+java.util.Date = com.cedarsoftware.io.Writers$DateAsLongWriter
+java.util.GregorianCalendar = com.cedarsoftware.io.Writers$CalendarWriter
+java.util.Locale = com.cedarsoftware.io.Writers$LocaleWriter
+java.util.TimeZone = com.cedarsoftware.io.Writers$TimeZoneWriter
+java.util.UUID = com.cedarsoftware.io.Writers$UUIDWriter
+
+java.util.regex.Pattern = com.cedarsoftware.io.Writers$PatternWriter
+
+sun.util.calendar.ZoneInfo = com.cedarsoftware.io.Writers$TimeZoneWriter
+
+# CompactMap
+com.cedarsoftware.util.CompactMap = com.cedarsoftware.io.writers.CompactMapWriter
+
+# CompactSet
+com.cedarsoftware.util.CompactSet = com.cedarsoftware.io.writers.CompactSetWriter

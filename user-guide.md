@@ -1,254 +1,193 @@
-### Usage
+## Usage
 **json-io** can be used directly on JSON Strings or with Java's Streams.
 
-_Example 1: String to Java object_
+### Typed Usage
 
-    String json = // some JSON content
-    Object obj = JsonReader.jsonToJava(json);     // optional 2nd 'options' argument (see below)
+_Example 1: Java object graph to JSON String_
+```java
+Employee emp;
+// Emp fetched from database
+String json = JsonIo.toJson(emp, writeOptions);
+```
+This example will convert the `Employee` instance to a JSON String, including nested sub-objects.  If
+`JsonIo.toJava(json, readOptions).asClass(Employee.class)` were used on this JSON `String,` a new Java `Employee` instance would be returned.
 
-This will convert the JSON String to a Java Object graph.
+See [WriteOptions reference](/user-guide-writeOptions.md) for list of all `WriteOptions` and instructions on how to use.
 
-_Example 2: Java object to JSON String_
+_Example 2: String to Java object_
+```java
+String json = // String JSON representing Employee instance
+Employee employee = JsonIo.toJava(json, readOptions).asClass(Employee.class);
+```
+This will convert the JSON String back to a Java Object graph.
 
-    Employee emp;
-    // Emp fetched from database
-    String json = JsonWriter.objectToJson(emp);     // optional 2nd 'options' argument (see below)
+See [ReadOptions reference](/user-guide-readOptions.md) for a list of all `ReadOptions` and instructions on how to use.
 
-This example will convert the `Employee` instance to a JSON String.  If the `JsonReader` were used on this `String`, 
-it would reconstitute a Java `Employee` instance.
+_Example 3: Java Object to `OutputStream`_
+```java
+Employee emp;
+// emp obtained from data store...
+JsonIo.toJson(outputStream, emp, writeOptions);       
+```
+In this example, a Java object is written to an `OutputStream` in JSON format.  The stream is closed when finished.  If
+you need to keep the `OutputStream` open (e.g. NDJSON), then set `writeOptions.closeStream(false).` Example:
+```java
+WriteOptions writeOptions = new WriteOptionsBuilder().closeStream(false).build();
+JsonIo.toJson(outputStream, record1, writeOptions);    
+JsonIo.toJson(outputStream, record2, writeOptions);
+...
+JsonIo.toJson(outputStream, recordn, writeOptions);
+outputStream.close();
+```
 
-_Example 3: `InputStream` to Java object_
+_Example 4: `InputStream` to Java object_
+```java
+List<Employee> list = JsonIo.toJava(stream, readOptions).asType(new TypeHolder<List<Employee>>(){});
+```
+In this example, an `InputStream` is supplying the JSON.
 
-    Employee emp = (Employee) JsonReader.jsonToJava(stream);  // optional 2nd 'options' argument (see below)
+### Untyped Usage
+**json-io** provides the choice to use the generic `Map` of `Maps` representation of an object, akin to a Javascript
+associative array.  When reading from a JSON `String` or `InputStream` of JSON, use `JsonIo`:
 
-In this example, an `InputStream` (could be from a File, the Network, etc.) is supplying an unknown amount of JSON.
-If you want, you can use the `JsonReader` to wrap the stream to parse it, and return the Java object graph it 
-represents. See constructors that take a Stream argument.
+```java 
+String json = // or InputStream to JSON providing source
+ReadOptions readOptions = new ReadOptionsBuilder().returnAsJsonObjects().build();
+Map root = JsonIo.toJava(json, readOptions).asClass(Map.class);    
+```
+See the `ReadOptions` below for the feature control options. In the provided example, rather than returning the objects
+converted into Java classes, the raw JSON values are parsed and returned as `Maps`. This forms a graph consisting of all
+`Map` instances, arrays, and primitive types.
 
-_Example 4: Java Object to `OutputStream`_
+### Representation of JSON Structures as Maps
+When `Map` is returned, the root value can represent one of the following:
+- **JSON Object (`{...}`)**: Transformed into a `Map` that represents any JSON object `{...}`.
+- **JSON Array (`[...]`)**: Represented as a `Map` with a key of `@items` which holds the list representing the JSON array `[...]`.
+- **JSON Primitive**: Such as boolean (true/false), null, numbers (long, double), and strings, directly represented as their Java equivalents.
 
-    Employee emp;
-    // emp obtained from database
-    JsonWriter jw = new JsonWriter(outputStream);       // optional 2nd 'options' argument (see below)
-    jw.write(emp);
-    jw.close();
+### Manipulating and Rewriting JSON
+This `Map` representation can be rewritten to a JSON String or Stream, ensuring that the output JSON will match the
+original input JSON stream. This feature is especially useful for handling JSON strings or streams containing class
+references not present in the JVM parsing the JSON. It allows complete reading and potential manipulation of the content,
+followed by rewriting the String or stream, providing a robust solution for dynamic data handling.
 
-In this example, a Java object is written to an output stream in JSON format.
+_Example: Manipulate JSON without having the referenced classes_
+```java
+// Read JSON into Map structure
+ReadOptions readOptions = new ReadOptionsBuilder().returnAsJsonObjects().build();
+Map<String, Object> jsonMap = JsonIo.toJava(jsonString, readOptions).asClass(Map.class);
 
-### Non-typed Usage
-**json-io** provides the choice to use the generic "Map of Maps" representation of an object, akin to a Javascript associative array.  When reading from a JSON String or `InputStream` of JSON, the `JsonReader` can be constructed like this:
+// Manipulate values
+jsonMap.put("name", "John Doe");
+((Map)jsonMap.get("address")).put("city", "New York");
 
-    // shown using Groovy short-hand for Map of options.  See options below.
-    String json = // some JSON obtained from wherever
-    Object obj = JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS): true])    
+// Write back to JSON
+String updatedJson = JsonIo.toJson(jsonMap, writeOptions);
+```
 
-This will return an untyped object representation of the JSON String as a `Map` of Maps, where the fields are the
-`Map` keys (Strings), and the field values are the associated Map's values. In this representation the returned data consists
-of Maps, Arrays (Object[]), and JSON values.  The Maps are actually a `JsonObject` instance (from **json-io**).  This 
-`JsonObject` implements the `Map` interface permitting access to the entire object.  Cast to a `JsonObject`, you can see 
-the type information, position within the JSON stream, and other information.  
+### Generic Type Support
+For working with generic types like `List<Employee>` or complex nested generics, use the `TypeHolder` class to preserve full generic type information:
 
-This 'Maps' representation can be re-written to a JSON String or Stream and _the output JSON will exactly match the
-original input JSON stream_.  This permits a JVM receiving JSON strings / streams that contain class references which 
-do not exist in the JVM that is parsing the JSON, to completely read / write the stream.  Additionally, the Maps can 
-be modified before being written, and the entire graph can be re-written in one collective write.  _Any object model 
-can be read, modified, and then re-written by a JVM that does not contain any of the classes in the JSON data._
+```java
+// Reading a list of employees
+List<Employee> employees = JsonIo.toJava(json, readOptions)
+                                .asType(new TypeHolder<List<Employee>>(){});
 
-#### The optional values below are public constants from `JsonWriter`, used by placing them as keys in the arguments map.
+// Reading a complex nested structure
+Map<String, List<Department<Employee>>> orgMap = JsonIo.toJava(json, readOptions)
+                                .asType(new TypeHolder<Map<String, List<Department<Employee>>>>(){});
+```
 
-    CUSTOM_WRITER_MAP       // Set to Map<Class, JsonWriter.JsonClassWriter> to
-                            // override the default JSON output for a given class. 
-    NOT_CUSTOM_WRITER_MAP   // Set to Collection<Class> to indicate classes that should
-                            // not be written by a custom writer.
-    DATE_FORMAT             // Set this format string to control the format dates are 
-                            // written. Example: "yyyy/MM/dd HH:mm".  Can also be a 
-                            // DateFormat instance.  Can also be the constant 
-                            // JsonWriter.ISO_DATE_FORMAT or 
-                            // JsonWriter.ISO_DATE_TIME_FORMAT 
-    TYPE                    // Set to boolean true to force all data types to be 
-                            // output, even where they could have been omitted. Set
-                            // to false to prevent @type from being written. Do not set
-                            // in order to minimize the number of @type's emitted.
-    PRETTY_PRINT            // Force nicely formatted JSON output 
-                            // (See http://jsoneditoronline.org for example format)
-    FIELD_SPECIFIERS        // Set to a Map<Class, List<String>> which is used to 
-                            // control which fields of a class are output.
-    FIELD_NAME_BLACK_LIST   // Set value to a Map<Class, List<String>> which will be used
-                            // to control which fields on a class are not output. Black 
-                            // list always has priority to FIELD_SPECIFIERS                         
-    ENUM_PUBLIC_ONLY        // If set, indicates that private variables of ENUMs are not 
-                            // serialized.
-    WRITE_LONGS_AS_STRINGS  // If set, longs are written in quotes (Javascript safe).
-                            // JsonReader will automatically convert Strings back
-                            // to longs.  Any Number can be set from a String.
-    TYPE_NAME_MAP           // If set, this map will be used when writing @type values.
-                            // Allows short-hand abbreviations for type names.
-    SHORT_META_KEYS         // If set, then @type => @t, @keys => @k, @items => @e,
-                            // @ref => @r, and @id => @i
-    SKIP_NULL_FIELDS        // Do not write field values to output JSON when
-                            // their value is null. If you have a constructor that takes
-                            // primitive wrapper arguments (ie., Integer), json-io will
-                            // supply their 'zero' value (0) when looking for constructors
-                            // to choose.                             
-    CLASSLOADER             // ClassLoader instance to use when turning String names of     
-                            // classes into JVM Class instances.
-    FORCE_MAP_FORMAT_ARRAY_KEYS_ITEMS  // Force Map output to use @keys/@items even if 
-                            // the Map contains all Strings as keys.
+## Advanced Usage
+Sometimes you will run into a class that does not want to serialize.  On the read-side, this can be a class that does
+not want to be instantiated easily.  A class that has private constructors, constructor with many difficult to supply
+arguments, etc. There are unlimited Java classes 'out-there' that `json-io` has never seen.  It can instantiate many classes, and
+resorts to a lot of "tricks" to make that happen.  However, if a particular class is not instantiating, add a
+`JsonReader.ClassFactory` (one that you write, which subclasses this interface) and associate it to the class you want to
+instantiate. See [examples](/src/test/java/com/cedarsoftware/io/CustomJsonSubObjectsTest.java) for how to do this.
+```java
+JsonReader.ClassFactory    // Create a class that implements this interface
+JsonWriter.JsonClassWriter // Create a class that implements this interface
+```
 
-#### The optional values below are public constants from `JsonReader`, used by placing them as keys in the arguments map.
+Your `JsonReader.ClassFactory` class is called after the JSON is parsed and `json-io` is converting all the Maps to
+Java instances.  Your factory class is passed the `JsonObject` (a `Map`) with the fields and values from the JSON so that
+you can **create** your class and **populate** it at the same time.  Use the `Resolver` to load complex fields
+of your class (Non-primitives, Object[]'s, typed arrays, Lists, Maps), making things easy - you only have to worry about
+the primitives in your class (see the examples below for how to 'tee up' the `Resolver` to load the sub-graph for
+you.)
 
-    CUSTOM_READER_MAP       // Set to Map<Class, JsonReader.JsonClassReaderEx> to
-                            // override the default JSON reader for a given class. 
-    NOT_CUSTOM_READER_MAP   // Set to Collection<Class> to indicate classes that should
-                            // not be read by a custom reader.
-    USE_MAPS                // If set to boolean true, the read-in JSON will be 
-                            // turned into a Map of Maps (JsonObject) representation. Note
-                            // that calling the JsonWriter on this root Map will indeed
-                            // write the equivalent JSON stream as was read.
-    TYPE_NAME_MAP           // If set, this map will be used when writing @type values. 
-                            // Allows short-hand abbreviations of type names.
-    UNKNOWN_TYPE            // Set to null (or leave out), unknown objects are returned
-                            // as Maps.  Set to String class name, and unknown objects 
-                            // will be created as with this class name, and the fields 
-                            // will be set on it. Set to false, and an exception will be 
-                            // thrown when an unknown object type is encountered.  The 
-                            // location in the JSON will be given.
-    FAIL_ON_UNKNOWN_TYPE    // Set to Boolean.TRUE to have JSON reader throw JsonIoException
-                            // when a @type value references a class that is not loadable
-                            // from the class loader. Set to any other value (or leave out)
-                            // and JSON parsing will return a Map to represent the unknown
-                            // object defined by the invalid @type value.
-    CLASSLOADER             // ClassLoader instance to use when turning String names of     
-                            // classes into JVM Class instances.
-      
-### Customization
+The [code examples](/src/test/java/com/cedarsoftware/io/CustomJsonSubObjectsTest.java) below show how to write a `ClassFactory` and `JSonClassWriter`.  There is a JUnit test case in the example
+that illustrates how to associate your `ClassFactory` and `JsonClassWriter` to particular
+classes. The [WriteOptions Reference](/user-guide-writeOptions.md) and [ReadOptions Reference](/user-guide-readOptions.md)
+have lots of additional information for how to register your factory classes with the `ReadOptionsBuilder` and `WriteOptionsBuilder`.
 
-#### Customization technique 1: Drop unwanted fields
-* **White-List support**: Let's say a class that you want to serialize has a field on it that you do not want written out, like a `ClassLoader` reference.
-Use the `JsonWriter.FIELD_SPECIFIERS` to associate a `List` of `String` field names to a particular `Class` C.  When the class
-is being written, only the fields you list will be written.
+### ClassFactory and CustomWriter Examples
 
-* **Black-List support**: Let's say a class that you want to serialize has a field on it that you do not want written out, like a `ClassLoader` reference.
-Use the `JsonWriter.FIELD_NAME_BLACK_LIST` to associate a `List` of `String` field names to a particular `Class` C.  When the class
-is being written, any field listed here will not be written.  Black-listed fields take priority over white listed
-fields.
+- [Primitive fields](/src/test/java/com/cedarsoftware/io/CustomJsonTest.java)
+- [Primitive and non-primitive fields (sub-graph)](/src/test/java/com/cedarsoftware/io/CustomJsonSubObjectTest.java)
+- [Primitive, array, type array, List, Map](/src/test/java/com/cedarsoftware/io/CustomJsonSubObjectsTest.java)
 
-#### Customization technique 2: Custom instantiator  `JsonReader.assignInstantiator(Class c, ClassFactoryEx)`
-There are times when **json-io** cannot instantiate a particular class even though it makes many attempts to instantiate 
-a class, including looping through all the constructors (public, private) and invoking them with default values, etc.  
-However, sometimes a class just cannot be constructed, for example, one that has a constructor that throws an exception 
-if particular parameters are not passed into it.
-                                                                                  
-In these instances, use the `JsonReader.assignInstantiator(class, Factory)` to assign a `ClassFactory` or `ClassFactoryEx` 
-that you implement to instantiate the class. **json-io** will call your `ClassFactory.newInstance(Class c)` 
-(or `ClassFactoryEx.newInstance(Class c, Map args)`) to create the class that it could not construct.  Your `ClassFactory` 
-will be called to create the instance.  In case you need values from the object being instantiated in order to construct it,
-use the `ClassFactoryEx` to instantiate it.  This class factory has the API `newInstance(Class c, Map args)` which will
-be called with the Class to instantiate and the JSON object that represents it (already read in).  In the args `Map`, 
-the key 'jsonObj' will have the associated `JsonObject` (`Map`) that is currently being read.  You can pull field values
-from this object to create and return the instance.  After your code creates the instance, **json-io** will reflectively
-stuff the values from the `jsonObj` (`JsonObject`) into the instance you create.
- 
-#### Customization technique 3: Shorter meta-keys (@type -> @t, @id -> @i, @ref -> @r, @keys -> @k, @items -> @e)  
-Set `JsonWriter.SHORT_META_KEYS` to `true` to see the single-letter meta keys used in the outputted JSON.  In addition
-to the shorter meta keys, you can and a list of substitutions of your own to use.  For example, you may want to see 
-`alist` instead of `java.util.ArrayList`.  This is only applicable if you are writing with @types in the JSON.
+- Custom `ClassFactory` and `JsonClassWriter` built for [CompactMap](https://github.com/jdereg/java-util/blob/master/userguide.md#compactmap)
 
-  
-      Map args = [
-              (JsonWriter.SHORT_META_KEYS):true,
-              (JsonWriter.TYPE_NAME_MAP):[
-                  'java.util.ArrayList':'alist', 
-                  'java.util.LinkedHashMap':'lmap', 
-                  (TestObject.class.getName()):'testO'
-              ]
-      ]
-      String json = JsonWriter.objectToJson(list, args)
-          
-In this example, we create an 'args' `Map`, set the key `JsonWriter.SHORT_META_KEYS` to `true` and set the
-`JsonWriter.TYPE_NAME_MAP` to a `Map` that will be used to substitute class names for short-hand names.
-         
-#### Customization technique 4: Custom serializer
-New APIs have been added to allow you to associate a custom reader / writer class to a particular class if you want it 
-to be read / written specially in the JSON output.  The **json-io** approach allows you to customize the JSON format for 
-classes for which you do not have the source code.
+  - [CompactMap reader](src/main/java/com/cedarsoftware/io/factory/CompactMapFactory.java) (`ClassFactory`)
+  - [CompactMap writer](src/main/java/com/cedarsoftware/io/writers/CompactMapWriter.java)  (`JsonClassWriter`)
 
-    Example (in Groovy). Note the Person has a List of pets, and in this case, it re-uses 
-    JsonWriter to write that part of the class out (no need to customize it):
-    
-    static class CustomPersonWriter implements JsonWriter.JsonClassWriter
-    {
-        void write(Object o, boolean showType, Writer output, Map<String, Object> args) throws IOException
-        {
-            Person p = (Person) o
-            output.write('"first":"')
-            output.write(p.getFirstName())
-            output.write('","last":"')
-            output.write(p.getLastName())
-            JsonWriter writer = Support.getWriter(args)
-            writer.writeImpl(p.getPets(), true)
-        }
-    }
- 
-#### Customization technique 5: Processing JSON from external sources.
-When reading JSON from external sources, you may want to start with:
+### Order of Type Resolution and Substitution
 
- in Groovy:
- 
-    Object data = JsonReader.jsonToJava(json, [(JsonReader.USE_MAPS): true])
-    
-In Java:
+#### Aliases (aliases.txt) - First
+- Used during writing (`JsonWriter`) and reading (`JsonReader`)
+- Primarily for shortening class names in JSON output
+- Example: `java.math.BigInteger = BigInteger`
+- Lightweight, just changes the string representation
+- Doesn't affect class loading or behavior
+#### Coerced Types (coercedTypes.txt) - Second
+- Used during class instantiation (`Resolver`)
+- Changes actual class used for instantiation
+- Example: `java.util.RegularEnumSet = java.util.EnumSet`
+- More invasive as it affects the actual type created
+- Should be used sparingly, only when:
+  - Handling internal implementation classes (like `RegularEnumSet`)
+  - Managing backward compatibility with older serialized forms
+  - Dealing with JDK implementation details that shouldn't leak into JSON
+#### ClassFactory (classFactory.txt) - Third
+- Used during object instantiation
+- Controls how instances are created and populated
+- Most flexible and powerful mechanism
+- Proper place for custom instantiation logic
+- Examples: `EnumSetFactory`, `CollectionFactory`, etc.
+#### Custom Readers/Writers - (When applicable)
+- Used for special serialization/deserialization logic
+- Can completely override normal processing
+- Most complex but most powerful
+- Strongly recommended: Use `ClassFactory` instead of a `CustomReader` as it **creates** and **loads**.
+---
+## Javascript
+Included is a small Javascript utility (`jsonUtil.js` in the root folder) that will take a JSON output
+stream created by the JSON writer and substitute all `@ref`s for the actual pointed to object.  It's a one-line
+call - `resolveRefs(json)`. This will substitute `@ref` tags in the JSON for the actual pointed-to (`@id`) object.
 
-    Map args = new HashMap();
-    args.put(JsonReader.USE_MAPS, true);
-    Object data = JsonReader.jsonToJava(json, args);
-
-
-This will get the JSON read into memory, in a Map-of-Maps format, similar to how JSON is read into memory in Javascript. 
-This will get you going right away.
-  
-To write 'generic' JSON (without `@type` or `@items`, etc.) entries, use:
-
-in Groovy:
-
-    String json = JsonWriter.objectToJson(objToWrite, [(JsonWriter.TYPE):false])
-
-In Java:
-
-    Map args = new HashMap();
-    args.put(JsonWriter.TYPE, false);
-    String json = JsonWriter.objectToJson(objToWrite, args);
-    
-Objects will not include the `@type` flags or `@items`.  This JSON passes nicely to non-Java receivers, like Javascript. 
-Keep in mind, you will be working with the JSON as generic `object.field` and `object[index]` with this approach.  
-
-Please note that if you write your object graph out with `JsonWriter.TYPE: false`, the shape of the graph will be 
-maintained.  What this means, is that if two different places in your object graph point to the same object, the first 
-reference will write the actual object, the 2nd and later references will write a reference (`@ref`) to the first instance.
-This will read in just fine with `JsonReader.jsonToJava()`, and the appropriate `Map` reference will be placed in all 
-referenced locations.  If reading this in Javascript, make sure to use the included `jsonUtil.js` to parse the read in JSON
-so that it can perform the substitutions of the `@ref`'s. (See `src/test/resource` folder for `jsonUtil.js`).
-
-### Javascript
-Included is a small Javascript utility (`jsonUtil.js` in the `src/test/resources` folder) that will take a JSON output 
-stream created by the JSON writer and substitute all `@ref's` for the actual pointed to object.  It's a one-line 
-call - `resolveRefs(json)`.  This will substitute `@ref` tags in the JSON for the actual pointed-to object.  
-
-### Additional uses for json-io
-Even though **json-io** is perfect for Java / Javascript serialization, there are other great uses for it:
+## Additional uses for json-io
+Even though **json-io** is great for Java / Javascript serialization, here are some other uses for it:
 
 #### Cloning
-Many projects use `JsonWriter` to write an object to JSON, then use the `JsonReader` to read it in, perfectly cloning the original object graph:
-
-    Employee emp;
-    // emp obtained from database
-    Employee deepCopy = (Employee) cloneObject(emp);
-
-    public Object cloneObject(Object root)
-    {
-        return JsonReader.jsonToJava(JsonWriter.objectToJson(root));
-    }
-
+Many projects use `JsonIo` to write an object to JSON, then read it in, cloning the original object graph:
+```java
+Employee emp;
+// emp obtained from somewhere...
+Employee deepCopy = (Employee) JsonIo.deepCopy(emp, null, null);   // ReadOptions, WriteOptions can be null
+```
 #### Debugging
-Instead of doing `System.out.println()` debugging, call `JsonWriter.objectToJson(obj)` and dump that String out.  It
-will reveal the object in all it's glory.
+Instead of `System.out.println()` debugging, call `JsonIo.toJson(obj, writeOptions)` and dump the JSON
+string out. That will give you the full referenceable graph dump in JSON.  Use the prettyPrint feature of `WriteOptions`
+to make the JSON more human-readable.
+
+#### Type Conversion
+json-io includes an extensive type conversion system powered by the [java-util](https://github.com/jdereg/java-util) library.
+This allows you to convert between nearly any Java types during deserialization. Run the `JsonIo.main()` method to see
+the complete list of supported conversions:
+
+```java
+// See all supported conversions
+java -cp your-classpath com.cedarsoftware.io.JsonIo
+```

@@ -1,0 +1,140 @@
+#
+# JsonReader.ClassFactory mappings
+#
+
+# java.lang
+java.lang.StackTraceElement = com.cedarsoftware.io.factory.StackTraceElementFactory
+java.lang.Throwable = com.cedarsoftware.io.factory.ThrowableFactory
+
+# interface instantiates to...
+java.util.Collection = com.cedarsoftware.io.factory.CollectionFactory
+java.util.List = com.cedarsoftware.io.factory.CollectionFactory
+java.util.Set = com.cedarsoftware.io.factory.CollectionFactory
+java.util.SortedSet = com.cedarsoftware.io.factory.CollectionFactory
+java.util.NavigableSet = com.cedarsoftware.io.factory.CollectionFactory
+java.util.Deque = com.cedarsoftware.io.factory.CollectionFactory
+java.util.Queue = com.cedarsoftware.io.factory.CollectionFactory
+java.util.Map = com.cedarsoftware.io.factory.MapFactory
+java.util.SortedMap = com.cedarsoftware.io.factory.MapFactory
+java.util.NavigableMap = com.cedarsoftware.io.factory.MapFactory
+
+[C = com.cedarsoftware.io.factory.CharacterPrimArrayFactory
+[Z = ArrayFactory
+[B = ArrayFactory
+[S = ArrayFactory
+[I = ArrayFactory
+[J = ArrayFactory
+[F = ArrayFactory
+[D = ArrayFactory
+
+[Ljava.lang.Character; = ArrayFactory
+[Ljava.lang.Boolean; = ArrayFactory
+[Ljava.lang.Byte; = ArrayFactory
+[Ljava.lang.Short; = ArrayFactory
+[Ljava.lang.Integer; = ArrayFactory
+[Ljava.lang.Long; = ArrayFactory
+[Ljava.lang.Float; = ArrayFactory
+[Ljava.lang.Double; = ArrayFactory
+
+[Ljava.lang.Class; = ArrayFactory
+[Ljava.lang.String; = ArrayFactory
+[Ljava.sql.Date; = ArrayFactory
+[Ljava.sql.Timestamp; = ArrayFactory
+[Ljava.time.LocalDate; = ArrayFactory
+[Ljava.math.BigDecimal; = ArrayFactory
+[Ljava.math.BigInteger; = ArrayFactory
+
+[Ljava.util.Calendar; = ArrayFactory
+[Ljava.util.Currency; = ArrayFactory
+[Ljava.util.Date; = ArrayFactory
+[Ljava.util.Locale; = ArrayFactory
+[Ljava.util.regex.Pattern; = ArrayFactory
+[Ljava.util.concurrent.atomic.AtomicBoolean; = ArrayFactory
+[Ljava.util.concurrent.atomic.AtomicInteger; = ArrayFactory
+[Ljava.util.concurrent.atomic.AtomicLong; = ArrayFactory
+
+[Ljava.time.Duration; = ArrayFactory
+[Ljava.time.Instant; = ArrayFactory
+[Ljava.time.Duration; = ArrayFactory
+[Ljava.time.Instant; = ArrayFactory
+[Ljava.time.LocalDate; = ArrayFactory
+[Ljava.time.LocalDateTime; = ArrayFactory
+[Ljava.time.LocalTime; = ArrayFactory
+[Ljava.time.MonthDay; = ArrayFactory
+[Ljava.time.OffsetDateTime; = ArrayFactory
+[Ljava.time.OffsetTime; = ArrayFactory
+[Ljava.time.Period; = ArrayFactory
+[Ljava.time.Year; = ArrayFactory
+[Ljava.time.YearMonth; = ArrayFactory
+[Ljava.time.ZonedDateTime; = ArrayFactory
+[Ljava.time.ZoneId; = ArrayFactory
+[Ljava.time.ZoneOffset; = ArrayFactory
+[Ljava.time.ZoneRegion; = ArrayFactory
+
+# Use factory classes to re-create "singleton" Collections classes as they are not easily instantiated
+java.util.Collections$SingletonList = com.cedarsoftware.io.factory.SingletonFactory
+java.util.Collections$SingletonSet = com.cedarsoftware.io.factory.SingletonFactory
+java.util.Collections$SingletonMap = com.cedarsoftware.io.factory.SingletonFactory
+
+# Use factory classes to re-create "empty" Collections classes as they are not easily instantiated
+java.util.Collections$EmptyEnumeration = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$EmptyIterator = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$EmptyListIterator = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$EmptyList = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$EmptySet = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$UnmodifiableNavigableSet$EmptyNavigableSet = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$EmptyMap = com.cedarsoftware.io.factory.EmptyFactory
+java.util.Collections$UnmodifiableNavigableMap$EmptyNavigableMap = com.cedarsoftware.io.factory.EmptyFactory
+
+# Use factory classes to re-create "unmodifiable" Collections classes
+java.util.Collections$UnmodifiableCollection = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableList = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableRandomAccessList = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableSet = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableSortedSet = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableNavigableSet = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableMap = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableSortedMap = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.Collections$UnmodifiableNavigableMap = com.cedarsoftware.io.factory.UnmodifiableFactory
+
+# Use SynchronizedFactory to instantiate "synchronized" Collections classes
+java.util.Collections$SynchronizedCollection = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedList = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedRandomAccessList = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedSet = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedSortedSet = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedNavigableSet = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedMap = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedSortedMap = com.cedarsoftware.io.factory.SynchronizedFactory
+java.util.Collections$SynchronizedNavigableMap = com.cedarsoftware.io.factory.SynchronizedFactory
+
+# Use CheckedFactory to instantiate "checked" Collections classes
+java.util.Collections$CheckedCollection = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedList = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedRandomAccessList = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedSet = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedSortedSet = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedNavigableSet = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedMap = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedSortedMap = com.cedarsoftware.io.factory.CheckedFactory
+java.util.Collections$CheckedNavigableMap = com.cedarsoftware.io.factory.CheckedFactory
+
+com.cedarsoftware.io.util.SealableList = com.cedarsoftware.io.factory.UnmodifiableFactory
+com.cedarsoftware.io.util.SealableSet = com.cedarsoftware.io.factory.UnmodifiableFactory
+com.cedarsoftware.io.util.SealableNavigableSet = com.cedarsoftware.io.factory.UnmodifiableFactory
+com.cedarsoftware.io.util.SealableMap = com.cedarsoftware.io.factory.UnmodifiableFactory
+com.cedarsoftware.io.util.SealableNavigableMap = com.cedarsoftware.io.factory.UnmodifiableFactory
+
+# List.of() and Set.of() support
+java.util.ImmutableCollections$ListN = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.ImmutableCollections$List12 = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.ImmutableCollections$SetN = com.cedarsoftware.io.factory.UnmodifiableFactory
+java.util.ImmutableCollections$Set12 = com.cedarsoftware.io.factory.UnmodifiableFactory
+
+java.util.EnumSet = com.cedarsoftware.io.factory.EnumSetFactory
+
+# CompactMap
+com.cedarsoftware.util.CompactMap = com.cedarsoftware.io.factory.CompactMapFactory
+
+# CompactSet
+com.cedarsoftware.util.CompactSet = com.cedarsoftware.io.factory.CompactSetFactory
