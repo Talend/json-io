@@ -5,7 +5,7 @@
     <groupId>com.cedarsoftware</groupId>
     <artifactId>json-io</artifactId>
     <packaging>bundle</packaging>
-    <version>4.53.0</version>
+    <version>4.53.0-talend</version>
     <description>Java JSON serialization</description>
     <url>https://github.com/jdereg/json-io</url>
 
@@ -154,7 +154,7 @@
                             <Implementation-Title>json-io</Implementation-Title>
                             <Implementation-Version>${project.version}</Implementation-Version>
                             <Implementation-Vendor-Id>com.cedarsoftware</Implementation-Vendor-Id>
-                            <Implementation-URL>https://github.com/jdereg/json-io</Implementation-URL>
+                            <Implementation-URL>https://github.com/talend/json-io</Implementation-URL>
                             <Built-By>${user.name}</Built-By>
                             <Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
                             <Build-Jdk>${java.version} (${java.vendor} ${java.vm.version})</Build-Jdk>
@@ -180,17 +180,20 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Import-Package>
-                            com.cedarsoftware.util,
-                            com.cedarsoftware.util.convert</Import-Package>
+                        <Import-Package></Import-Package>
                         <Export-Package>
                             com.cedarsoftware.io,
                             com.cedarsoftware.io.reflect,
                             com.cedarsoftware.io.reflect.filters,
                             com.cedarsoftware.io.reflect.filters.field,
-                            com.cedarsoftware.io.reflect.filters.method
+                            com.cedarsoftware.io.reflect.filters.method,
+                            com.cedarsoftware.util,
+                            com.cedarsoftware.util.convert
                         </Export-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
+                        <Implementation-Version>4.53.0</Implementation-Version>
+                        <Embed-Transitive>false</Embed-Transitive>
+                        <Embed-Dependency>artifactId=java-util;inline=false</Embed-Dependency>
                     </instructions>
                 </configuration>
                 <executions>
@@ -321,8 +324,8 @@
                             <module>
                                 <moduleInfoSource>
                                     module com.cedarsoftware.io {
-                                    requires com.cedarsoftware.util;
-                                    requires com.cedarsoftware.util.convert;
+                                    exports com.cedarsoftware.util;
+                                    exports com.cedarsoftware.util.convert;
                                     exports com.cedarsoftware.io;
                                     exports com.cedarsoftware.io.reflect;
                                     exports com.cedarsoftware.io.reflect.filters;
